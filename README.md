@@ -1,2 +1,7 @@
-# teach-in-fe-matching-experiment
-An experimental service to test matching potential FE teachers with local colleges
+# Teach in Further Education - Candidate and College Matching Experiment
+An experimental service to test matching potential further education teachers with local colleges
+
+## Architecture and Design
+
+### Basic Flow
+![Basic Flow](docs/images/basic_flow.png?raw=true)

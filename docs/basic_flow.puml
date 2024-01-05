@@ -1,0 +1,159 @@
+@startuml
+actor Candidate
+participant QSurveyCandidate [
+  =Register Candidate
+  ----
+  «Qualtrics Survey»
+]
+
+participant QWorkflowRegisterCandidate [
+  =Register Candidate
+  ----
+  «Qualtrics Workflow»
+] 
+
+participant AzRegisterCandidate [
+  =Register Candidate
+  ----
+  «Azure Function»
+] 
+
+participant QWorkflowInviteCollege [
+  =Invite College
+  ----
+  «Qualtrics Workflow»
+] 
+
+actor College
+
+participant QSurveyCollege [
+  =Register College
+  ----
+  «Qualtrics Survey»
+] 
+
+participant QWorkflowRegisterCollege [
+  =Register College
+  ----
+  «Qualtrics Survey»
+] 
+
+participant QWorkflowSendCandidates [
+  =Send Candidates to College
+  ----
+  «Qualtrics Survey»
+] 
+
+participant AzSendCandidates [
+  =Send Candidates to College
+  ----
+  «Azure Function»
+] 
+
+participant QualtricsAPI [
+  =Qualtrics API
+  ----
+  «REST API»
+] 
+
+participant PostcodesIO [
+  =postcodes.io
+  ----
+  «REST API»
+] 
+
+== Candidate registers for the service ==
+
+Candidate -> QSurveyCandidate: Complete survey
+
+QSurveyCandidate -> QSurveyCandidate: Create contact record for candidate
+
+QSurveyCandidate -> QWorkflowRegisterCandidate++: Trigger workflow
+
+QWorkflowRegisterCandidate -> AzRegisterCandidate++: Trigger function [ email, postcode ]
+
+AzRegisterCandidate -> PostcodesIO: Get lat/long for postcode
+
+AzRegisterCandidate -> QualtricsAPI: Fetch all colleges
+
+AzRegisterCandidate -> AzRegisterCandidate: Calculate distance for all colleges
+
+AzRegisterCandidate -> AzRegisterCandidate: Get nearest colleges
+
+AzRegisterCandidate -> QualtricsAPI: Store nearest college IDs against candidate contact
+
+loop for each nearest college
+
+alt college status = 'unregistered'
+
+AzRegisterCandidate -> QualtricsAPI: Update college status to 'needs inviting'
+
+== College is invited to the service ==
+
+QualtricsAPI ->> QWorkflowInviteCollege++: Trigger workflow
+
+alt college status = 'needs inviting'
+
+QWorkflowInviteCollege -> College: Send invite survey to college
+
+QWorkflowInviteCollege -> QualtricsAPI: Update college status to 'invited'
+
+end
+
+return 
+
+== College registers for the service ==
+
+end
+
+end
+
+return
+
+College -> QSurveyCollege : Complete survey
+
+QSurveyCollege -> QWorkflowRegisterCollege++ : Trigger workflow
+
+QWorkflowRegisterCollege -> QualtricsAPI: Update college status to 'active'
+
+return
+
+== Candidates are sent to the colleges ==
+
+-> QWorkflowSendCandidates++ : Trigger workflow once a week
+
+QWorkflowSendCandidates -> AzSendCandidates++: Trigger function
+
+AzSendCandidates -> QualtricsAPI: Fetch colleges with 'active' status
+
+AzSendCandidates -> QualtricsAPI: Fetch all candidates
+
+loop for each college
+
+loop for each candidate
+
+alt college is in the candidate matches and college is not in the candidate already sent list
+
+AzSendCandidates -> AzSendCandidates: Add college to 'to send' list
+
+end
+
+end
+
+AzSendCandidates -> QualtricsAPI : Send email to college with 'to send' candidate details
+
+QualtricsAPI -> College : Email with candidate details
+
+loop for each candidate in 'to send' list
+
+AzSendCandidates -> QualtricsAPI : Update candidate to add college to 'sent' list
+
+end
+
+end
+
+return
+
+return
+
+@enduml
