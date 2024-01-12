@@ -2,7 +2,7 @@
   "name": "teach-in-fe-matching-experiment",
   "version": "0.1.0",
   "description": "An experimental service to test matching potential further education teachers with local colleges",
-  "main": "src/functions/**/index.ts",
+  "main": "src/functions/**/*.js",
   "directories": {
     "doc": "docs"
   },
