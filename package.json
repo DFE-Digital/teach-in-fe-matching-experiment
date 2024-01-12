@@ -1,0 +1,25 @@
+{
+  "name": "teach-in-fe-matching-experiment",
+  "version": "0.1.0",
+  "description": "An experimental service to test matching potential further education teachers with local colleges",
+  "main": "src/index.ts",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DFE-Digital/teach-in-fe-matching-experiment.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DFE-Digital/teach-in-fe-matching-experiment/issues"
+  },
+  "homepage": "https://github.com/DFE-Digital/teach-in-fe-matching-experiment#readme",
+  "dependencies": {
+    "@azure/functions": "^4.1.0"
+  }
+}
