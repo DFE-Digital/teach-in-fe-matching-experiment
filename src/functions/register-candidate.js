@@ -14,12 +14,12 @@ app.http('register-candidate', {
             "Content-Type": "application/json",
             "X-API-TOKEN": process.env.QUALTRICS_ENV
         }
-        context.log(`Envirement variable : "${process.env.QUALTRICS_ENV}" `);
-        // const name = request.query.get('name') || await request.text() || 'world';
+        
+        const requestData = await request.json();
 
-        const candidateLat = request.query.get('lat'); //51.496351
-        const candidateLong = request.query.get('long'); // -0.087925
-        const candidateContactId = await getContactId(candidate_URL, qualtricsHeader, request.query.get('email'), context);
+        const candidateLat = requestData.lat; //51.496351
+        const candidateLong = requestData.long; // -0.087925
+        const candidateContactId = await getContactId(candidate_URL, qualtricsHeader, requestData.email, context);
         context.log(`Candidate contactID after returned : "${candidateContactId}" `);
 
         let distances = [];
