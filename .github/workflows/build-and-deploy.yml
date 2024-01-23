@@ -42,3 +42,32 @@ jobs:
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A623622763894A2CB7465CB9AA29FE8D }}
+
+  test:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install dependencies
+      run: npm install -g yarn && yarn
+    - name: Install Playwright Browsers
+      run: yarn playwright install --with-deps
+    - name: Run Playwright tests
+      run: yarn playwright test
+      env:
+        QUALTRICS_ENV: ${{ secrets.QUALTRICS_API_KEY }}
+        QUALTRICS_POOL_ID: ${{ secrets.QUALTRICS_POOL_ID }}
+        QUALTRICS_MAILING_LIST_CANDIDATES: ${{ secrets.QUALTRICS_MAILING_LIST_CANDIDATES }}
+        QUALTRICS_MAILING_LIST_COLLEGES: ${{ secrets.QUALTRICS_MAILING_LIST_COLLEGES }}
+        QUALTRICS_MAILING_LIST_COLLEGE_GROUPS: ${{ secrets.QUALTRICS_MAILING_LIST_COLLEGE_GROUPS }}
+        MAILINATOR_API_KEY: ${{ secrets.MAILINATOR_API_KEY }}
+        MAILINATOR_DOMAIN: ${{ secrets.MAILINATOR_DOMAIN }}
+    - uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
