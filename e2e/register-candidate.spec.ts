@@ -29,7 +29,7 @@ const getTestEmail = (reference: string): string =>
 
 const candidateEmail = getTestEmail(getTestReference("candidate"));
 
-const collegeRecords = testColleges.ash;
+const collegeRecords = testColleges.test2;
 
 for (const collegeRecord of collegeRecords.colleges) {
   // collegeRecord.extRef = getTestReference(collegeRecord.extRef);
@@ -98,7 +98,7 @@ test.describe("Register Candidate", () => {
 
   test("Registering a new candidate", async ({ page }) => {
     const candidateFirstName = "Test Candidate";
-    const candidatePostCode = testPostcodes.ash.postcode;
+    const candidatePostCode = testPostcodes.test2.postcode;
 
     await page.goto(surveyLink);
 

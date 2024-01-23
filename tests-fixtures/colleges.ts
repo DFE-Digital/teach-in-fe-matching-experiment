@@ -27,7 +27,7 @@ export default {
       },
     ],
   },
-  ash: {
+  test2: {
     colleges: [
       {
         extRef: "test-college-2",
