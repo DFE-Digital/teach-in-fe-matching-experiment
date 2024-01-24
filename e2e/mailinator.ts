@@ -4,7 +4,7 @@ import {
   GetLinksRequest,
   DeleteInboxMessagesRequest,
 } from "mailinator-client";
-import config from "./config";
+import config from "../src/config";
 
 export const mailinatorClient = new MailinatorClient(config.mailinatorApiKey);
 

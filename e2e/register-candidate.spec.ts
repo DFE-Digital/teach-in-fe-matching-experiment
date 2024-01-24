@@ -14,7 +14,7 @@ import {
   deleteCollegeGroupByExtRef,
   getCollegeGroupByExtRef,
 } from "../src/qualtrics/college-group-service";
-import { deleteInbox, getInbox, getMessageLinks } from "../src/mailinator";
+import { deleteInbox, getInbox, getMessageLinks } from "./mailinator";
 
 const surveyLink =
   "https://dferesearch.fra1.qualtrics.com/jfe/form/SV_eWMEBTaDUEcIeOy";
