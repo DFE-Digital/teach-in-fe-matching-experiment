@@ -4,7 +4,7 @@ const urls = require('./urls');
 
 app.http('auth-test', {
     methods: ['GET', 'POST'],
-    authLevel: 'qualtrics',
+    authLevel: 'function',
     handler: async (request, context) => {
         return {
             body: JSON.stringify({ hello: "world" })
