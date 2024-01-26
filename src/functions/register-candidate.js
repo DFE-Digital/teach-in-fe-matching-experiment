@@ -4,7 +4,7 @@ const urls = require('./urls');
 
 app.http('register-candidate', {
     methods: ['GET', 'POST'],
-    authLevel: 'anonymous',
+    authLevel: 'function',
     handler: async (request, context) => {
         
         const requestData = await request.json();
