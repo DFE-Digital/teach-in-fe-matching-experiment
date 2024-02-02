@@ -26,3 +26,10 @@ export const deleteCollegeByExtRef = async (extRef: string) => {
         }
     } while (college);
 };
+
+export const getCollegeByExtRef = async (extRef: string): Promise<College> => {
+    return getMailingListContactByExtRef(
+        config.qualtricsMailingListColleges,
+        extRef,
+    );
+};
