@@ -202,7 +202,7 @@ test.describe("Register Candidate", () => {
 
     await page.locator("#NextButton").click();
 
-    await page.getByText("Thank you for signing up").waitFor({ timeout: 5000 });
+    await page.getByText("Thank you for taking part").waitFor({ timeout: 5000 });
 
     console.log(
       "🚀🚀🚀 Waiting for the college to be updated to 'Active' 🚀🚀🚀",
