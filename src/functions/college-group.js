@@ -1,9 +1,9 @@
 module.exports = {
-    collegeGroup: function() {
+    collegeGroup: function () {
         return {
             collegeGroupName: "",
             collegeGroupEmail: "",
-            candidates: []
+            candidates: [],
         };
-    }
+    },
 };

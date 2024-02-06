@@ -39,16 +39,16 @@ const urlDirectoryContact = (poolId: string, contactId: string) =>
     `${urlDirectoryContacts(poolId)}/${encodeURIComponent(contactId)}`;
 
 export const getAllMailingListContacts = async <T extends Contact>(
-    mailingListId: string
+    mailingListId: string,
 ): Promise<Array<T>> => {
     const contacts = [];
 
     let nextPageUrl = `${urlMailingListContacts(config.qualtricsContactPoolId, mailingListId)}?includeEmbedded=true&useNewPaginationScheme=true`;
 
-    while(nextPageUrl) {
+    while (nextPageUrl) {
         const response = await qAxios.get(nextPageUrl);
 
-        for(const contact of response.data.result.elements) {
+        for (const contact of response.data.result.elements) {
             contacts.push(contact);
         }
 
@@ -56,7 +56,7 @@ export const getAllMailingListContacts = async <T extends Contact>(
     }
 
     return contacts;
-}
+};
 
 export const getMailingListContactByEmail = async <T extends Contact>(
     mailingListId: string,

@@ -66,16 +66,16 @@ const deleteTestColleges = async () => {
 };
 
 test.describe("Register Candidate", () => {
-  test.setTimeout(5 * 60 * 1000); // 5 minutes
+  test.setTimeout(2 * 60 * 1000); // 2 minutes
 
-  const mailboxesToDelete = [];
+  const mailboxesToDelete: string[] = [];
 
   const cleanup = async () => {
     console.log("🚀🚀🚀 Deleting test candidate 🚀🚀🚀");
     const candidate = await getCandidateByEmail(candidateEmail);
 
     if (candidate) {
-      await deleteContactById(candidate.id);
+      await deleteContactById(candidate.id!);
     }
   };
 
@@ -124,7 +124,7 @@ test.describe("Register Candidate", () => {
     );
 
     expect(contact.firstName).toEqual(candidateFirstName);
-    expect(contact.embeddedData.postcode).toEqual(candidatePostCode);
+    expect(contact.embeddedData!.postcode).toEqual(candidatePostCode);
     expect(contact.email).toEqual(candidateEmail);
 
     console.log(
@@ -139,27 +139,27 @@ test.describe("Register Candidate", () => {
       },
     );
 
-    expect(contact.embeddedData.college1Id).toEqual(
-      collegeRecords.colleges[0].extRef,
+    expect(contact.embeddedData!.college1Id).toEqual(
+      collegeRecords.colleges![0].extRef,
     );
 
     console.log("🚀🚀🚀 Waiting for the college to be updated 🚀🚀🚀");
     let collegeGroup = await retry(
       async () =>
-        await getCollegeGroupByExtRef(collegeRecords.groups[0].extRef),
+        await getCollegeGroupByExtRef(collegeRecords.groups![0].extRef!),
       {
         retries: 12,
         delay: 10000,
         until: (collegeGroup) =>
-          collegeGroup.embeddedData.groupStatus == "Invited",
+          collegeGroup.embeddedData!.groupStatus == "Invited",
       },
     );
 
-    expect(collegeGroup.embeddedData.groupStatus).toEqual("Invited");
+    expect(collegeGroup.embeddedData!.groupStatus).toEqual("Invited");
 
     console.log("🚀🚀🚀 Waiting for college invite email 🚀🚀🚀");
 
-    const collegeGroupInbox = getTestReference(collegeGroup.extRef);
+    const collegeGroupInbox = getTestReference(collegeGroup.extRef!);
     mailboxesToDelete.push(collegeGroupInbox);
 
     console.log("  Inbox is ", collegeGroupInbox);
@@ -195,11 +195,18 @@ test.describe("Register Candidate", () => {
 
     await page.goto(collegeSurveyLink);
 
+    // Intro page
+    await page.locator("#NextButton").click();
+
+    // College details page
     await page.getByLabel("First name").fill("Joe");
     await page.getByLabel("Last name").fill("Bloggs");
     await page.getByLabel("Your job title").fill("Automated tester");
-    await page.getByLabel("Email").fill(newGroupEmail);
+    await page.getByLabel("Your work email").fill(newGroupEmail);
 
+    await page.locator("#NextButton").click();
+
+    // Terms of the trial page
     await page.locator("#NextButton").click();
 
     await page.getByText("Thank you for taking part").waitFor({ timeout: 5000 });

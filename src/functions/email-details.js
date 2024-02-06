@@ -1,10 +1,10 @@
 module.exports = {
-    emailDetails: function() {
+    emailDetails: function () {
         return {
             email: "",
             subject: "",
             body: "",
-            key: ""
+            key: "",
         };
-    }
+    },
 };

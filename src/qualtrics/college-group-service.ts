@@ -8,8 +8,10 @@ import {
 } from "./qualtrics-service";
 
 export const getAllCollegeGroups = async (): Promise<CollegeGroup[]> => {
-    return await getAllMailingListContacts(config.qualtricsMailingListCollegeGroups);
-}
+    return await getAllMailingListContacts(
+        config.qualtricsMailingListCollegeGroups,
+    );
+};
 
 export const createCollegeGroup = async (collegeGroup: CollegeGroup) => {
     await createOrUpdateContactByExtRef(

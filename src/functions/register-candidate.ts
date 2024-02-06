@@ -1,10 +1,10 @@
-import 'dotenv/config';
-import { getAllColleges } from '../qualtrics/college-service';
-import { College } from '../types';
+import "dotenv/config";
+import { getAllColleges } from "../qualtrics/college-service";
+import { College } from "../types";
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
-const collegeGroupService = require('../qualtrics/college-group-service');
+const collegeGroupService = require("../qualtrics/college-group-service");
 
 const radiusMiles = 40;
 const radiusKm = radiusMiles * 1.609;
@@ -41,9 +41,9 @@ app.http("register-candidate", {
             ordredReachableColleges != undefined &&
             ordredReachableColleges.length > 0
         ) {
-            let collegeIds = [];
-            let chosenGroupIds = [];
-            let waitingListGroup = [];
+            let collegeIds: any[] = [];
+            let chosenGroupIds: any[] = [];
+            let waitingListGroup: any[] = [];
             let collegeCount = 0;
             for (let i = 0; i < ordredReachableColleges.length; i++) {
                 if (collegeCount < 5) {
@@ -223,7 +223,11 @@ async function assignToCollege(
         });
 }
 
-async function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
+async function setCollegeGroupToNeedsInvite(
+    collegeGroups,
+    chosenGroupIds,
+    context,
+) {
     // context.log(`--------------------------------------"${chosenGroupIds}"`);
 
     for (let i = 0; i < collegeGroups.length; i++) {
