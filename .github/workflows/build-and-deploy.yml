@@ -83,6 +83,7 @@ jobs:
         QUALTRICS_MAILING_LIST_COLLEGE_GROUPS: ${{ secrets.QUALTRICS_MAILING_LIST_COLLEGE_GROUPS }}
         MAILINATOR_API_KEY: ${{ secrets.MAILINATOR_API_KEY }}
         MAILINATOR_DOMAIN: ${{ secrets.MAILINATOR_DOMAIN }}
+        CANDIDATE_SURVEY_URL: ${{ secrets.CANDIDATE_SURVEY_URL }}
 
     - uses: actions/upload-artifact@v3
       if: always()
