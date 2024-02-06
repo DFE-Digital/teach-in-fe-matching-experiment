@@ -3,12 +3,14 @@ import 'dotenv/config'
 import config from "./src/config";
 import { createCollegeGroup, getCollegeGroupByExtRef } from "./src/qualtrics/college-group-service";
 import { createCollege, getCollegeByExtRef } from "./src/qualtrics/college-service";
-import { College } from "./src/types";
+import { College, CollegeGroup } from "./src/types";
 
 import axios from 'axios';
 import { exit } from 'process';
 
-const write = false;
+const write = true;
+const overwriteGroupEmails = false;
+const resetGroupStatus = false;
 
 const collegeGroupsUrl = 'https://raw.githubusercontent.com/DFE-Digital/fe-college-reference-data/main/collegeGroups.json';
 const collegesUrl = 'https://raw.githubusercontent.com/DFE-Digital/fe-college-reference-data/main/colleges.json';
@@ -42,6 +44,9 @@ type PostcodesIOResponse = {
     }
 }
 
+// const createEmailAddress = (collegeGroup: CollegeGroup) => `${collegeGroup.extRef}@${config.mailinatorDomain}`;
+const createEmailAddress = (collegeGroup: SourceCollegeGroup) => `college.match+${collegeGroup.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}@education.gov.uk`;
+
 const getSourceCollegeGroupId = (college: SourceCollege, collegeGroups: SourceCollegeGroup[]) : string => {
     if(college.parentId) {
         return getCollegeGroupReference(college.parentId);
@@ -73,13 +78,14 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
         let qualtricsCollege = await getCollegeByExtRef(extRef);
 
         const name = college.collegeName;
+        const groupId = getSourceCollegeGroupId(college, collegeGroups);
 
         if(!qualtricsCollege) {
             qualtricsCollege = {
                 extRef: extRef,
                 firstName: name,
                 embeddedData: {
-                    groupId: getSourceCollegeGroupId(college, collegeGroups),
+                    groupId
                 }
             };
         } else {
@@ -87,11 +93,11 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
         }
 
         if(college.campuses.length != 1) {
-            console.error("College with more or less than 1 campus. This is not currently supported.", college);
+            console.error("College with other than 1 campus. This is not currently supported.", college);
             exit(1);
         }
 
-        const postcode = college.campuses[0].postcode.replace(/[^A-Za-z0-9]/, '');
+        const postcode = college.campuses[0].postcode.replace(/[^A-Za-z0-9]/g, '');
 
         try {
             const postcodeResponse: PostcodesIOResponse = (await axios.get(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`)).data;
@@ -111,7 +117,7 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
         let qualtricsCollegeGroup = await getCollegeGroupByExtRef(extRef);
 
         const name = collegeGroup.name;
-        const email = `${extRef}@${config.mailinatorDomain}`;
+        const email = createEmailAddress(collegeGroup);
 
         if(!qualtricsCollegeGroup) {
             qualtricsCollegeGroup = {
@@ -124,13 +130,21 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
             }
         } else {
             qualtricsCollegeGroup.embeddedData.groupName = name;
+
+            if(overwriteGroupEmails) {
+                qualtricsCollegeGroup.email = email;
+            }
+
+            if(resetGroupStatus) {
+                qualtricsCollegeGroup.embeddedData.groupStatus = 'Unregistered';
+            }
         }
 
         if(write) {
             console.log(`Writing college group ${qualtricsCollegeGroup.extRef} - ${qualtricsCollegeGroup.embeddedData.groupName}`);
             createCollegeGroup(qualtricsCollegeGroup);
         } else {
-            console.log("Creating college group", qualtricsCollegeGroup);
+            console.log("Creating/updating college group", qualtricsCollegeGroup);
         }
     }
 
@@ -139,7 +153,7 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
             console.log(`Writing college ${qualtricsCollege.extRef} - ${qualtricsCollege.firstName}`);
             createCollege(qualtricsCollege);
         } else {
-            console.log("Creating college", qualtricsCollege);
+            console.log("Creating/updating college", qualtricsCollege);
         }
     }
 })().then()
