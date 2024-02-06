@@ -33,8 +33,8 @@ export default {
         extRef: "test-college-2",
         firstName: "Test College 2",
         embeddedData: {
-          lat: 50.90894963291789,
-          long: -0.06962100324447584,
+          lat: 50.9754601347571,
+          long: 0.10275801216124947,
           groupId: "test-group-2",
         },
       },
