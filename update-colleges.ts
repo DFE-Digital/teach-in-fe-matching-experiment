@@ -12,8 +12,8 @@ const write = true;
 const overwriteGroupEmails = false;
 const resetGroupStatus = false;
 
-const collegeGroupsUrl = 'https://raw.githubusercontent.com/DFE-Digital/fe-college-reference-data/main/collegeGroups.json';
-const collegesUrl = 'https://raw.githubusercontent.com/DFE-Digital/fe-college-reference-data/main/colleges.json';
+const collegeGroupsUrl = config.dataSourceUrlCollegeGroups;
+const collegesUrl = config.dataSourceUrlColleges;
 
 type SourceCollegeCampus = {
     campusName: string,

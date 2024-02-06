@@ -1,3 +1,4 @@
+import 'dotenv/config';
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
