@@ -4,6 +4,9 @@ const axios = require("axios");
 const urls = require("./urls");
 const collegeGroupService = require('../qualtrics/college-group-service');
 
+const radiusMiles = 40;
+const radiusKm = radiusMiles * 1.609;
+
 app.http("register-candidate", {
     methods: ["GET", "POST"],
     authLevel: "function",
@@ -142,7 +145,7 @@ async function getClosestColleges(candidateLat, candidateLong, context) {
                         Math.sin(dLon / 2);
                 let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 let d = R * c;
-                if (d < 40.1) {
+                if (d < radiusKm) {
                     let currentDistance = {
                         collegeId: extRef,
                         distance: d,
