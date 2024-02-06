@@ -1,5 +1,3 @@
-import 'dotenv/config'
-
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
@@ -164,7 +162,7 @@ function deg2rad(deg) {
     return deg * (Math.PI / 180);
 }
 
-function assignToCollege(
+async function assignToCollege(
     collegeIds,
     candidateContactId,
     context,
