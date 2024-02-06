@@ -1,4 +1,4 @@
-![Build and test](https://github.com/TransformCore/teach-in-fe-matching-experiment/actions/workflows/build-and-deploy.yml/badge.svg)
+![Build and test](https://github.com/DFE-Digital/teach-in-fe-matching-experiment/actions/workflows/build-and-deploy.yml/badge.svg)
 
 # Teach in Further Education - Candidate and College Matching Experiment
 An experimental service to test matching potential further education teachers with local colleges
