@@ -38,6 +38,26 @@ const urlDirectorySearch = (poolId: string) =>
 const urlDirectoryContact = (poolId: string, contactId: string) =>
     `${urlDirectoryContacts(poolId)}/${encodeURIComponent(contactId)}`;
 
+export const getAllMailingListContacts = async <T extends Contact>(
+    mailingListId: string
+): Promise<Array<T>> => {
+    const contacts = [];
+
+    let nextPageUrl = `${urlMailingListContacts(config.qualtricsContactPoolId, mailingListId)}?includeEmbedded=true&useNewPaginationScheme=true`;
+
+    while(nextPageUrl) {
+        const response = await qAxios.get(nextPageUrl);
+
+        for(const contact of response.data.result.elements) {
+            contacts.push(contact);
+        }
+
+        nextPageUrl = response.data.result.nextPage;
+    }
+
+    return contacts;
+}
+
 export const getMailingListContactByEmail = async <T extends Contact>(
     mailingListId: string,
     emailAddress: string,
@@ -69,7 +89,8 @@ export const getMailingListContactByEmail = async <T extends Contact>(
 
     if (contacts.length > 0) {
         console.log(`Found contact`);
-        contacts[0].extRef = contacts[0].externalDataReference; // Honestly??!!
+        contacts[0].extRef = contacts[0].externalDataReference; // Honestly ??!!
+        contacts[0].phone = contacts[0].phoneNumber; // Honestly x 2 ??!!
         return contacts[0];
     } else {
         console.log(`Contact not found`);
@@ -109,6 +130,7 @@ export const getMailingListContactByExtRef = async <T extends Contact>(
     if (contacts.length > 0) {
         console.log(`Found contact`);
         contacts[0].extRef = contacts[0].externalDataReference; // Honestly??!!
+        contacts[0].phone = contacts[0].phoneNumber; // Honestly x 2 ??!!
         return contacts[0];
     } else {
         console.log(`Contact not found`);
@@ -132,11 +154,22 @@ export const updateContactById = async (
     contactId: string,
     contact: Contact,
 ) => {
-    console.log(`Creating new contact`);
+    console.log(`Updating existing contact ${contactId}`);
+
+    const toPut = {
+        firstName: contact["firstName"],
+        lastName: contact["lastName"],
+        email: contact["email"],
+        phone: contact["phone"],
+        extRef: contact["extRef"],
+        embeddedData: contact["embeddedData"],
+        language: contact["language"],
+        unsubscribed: contact["unsubscribed"],
+    };
 
     await qAxios.put(
         urlDirectoryContact(config.qualtricsContactPoolId, contactId),
-        contact,
+        toPut,
     );
 };
 

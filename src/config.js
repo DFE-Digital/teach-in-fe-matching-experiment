@@ -9,4 +9,6 @@ export default {
         process.env.QUALTRICS_MAILING_LIST_COLLEGE_GROUPS,
     mailinatorApiKey: process.env.MAILINATOR_API_KEY,
     mailinatorDomain: process.env.MAILINATOR_DOMAIN,
+    dataSourceUrlCollegeGroups: process.env.DATA_SOURCE_URL_COLLEGE_GROUPS,
+    dataSourceUrlColleges: process.env.DATA_SOURCE_URL_COLLEGES,
 };

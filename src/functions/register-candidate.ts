@@ -1,6 +1,11 @@
+import 'dotenv/config';
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
+const collegeGroupService = require('../qualtrics/college-group-service');
+
+const radiusMiles = 40;
+const radiusKm = radiusMiles * 1.609;
 
 app.http("register-candidate", {
     methods: ["GET", "POST"],
@@ -17,7 +22,7 @@ app.http("register-candidate", {
         // context.log(`Candidate contactID after returned : "${candidateContactId}" `);
 
         // load all collge-groups data from qualtrics to local list
-        let collegeGroups = await getCollegeGroups(context);
+        let collegeGroups = await collegeGroupService.getAllCollegeGroups();
 
         // get the closest colloges to the candidate by using their lat/long
         let reachableColleges = await getClosestColleges(
@@ -28,7 +33,7 @@ app.http("register-candidate", {
 
         // sort colleges by distance
         let ordredReachableColleges = reachableColleges.sort(
-            (a, b) => a.reachableColleges - b.reachableColleges,
+            (a, b) => a.distance - b.distance,
         );
         if (
             ordredReachableColleges != undefined &&
@@ -72,13 +77,13 @@ app.http("register-candidate", {
                 }
             }
 
-            setCollegeGroupToNeedsInvite(
+            await setCollegeGroupToNeedsInvite(
                 collegeGroups,
                 chosenGroupIds,
                 context,
             );
 
-            assignToCollege(
+            await assignToCollege(
                 collegeIds,
                 candidateContactId,
                 context,
@@ -140,7 +145,7 @@ async function getClosestColleges(candidateLat, candidateLong, context) {
                         Math.sin(dLon / 2);
                 let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 let d = R * c;
-                if (d < 40.1) {
+                if (d < radiusKm) {
                     let currentDistance = {
                         collegeId: extRef,
                         distance: d,
@@ -161,7 +166,7 @@ function deg2rad(deg) {
     return deg * (Math.PI / 180);
 }
 
-function assignToCollege(
+async function assignToCollege(
     collegeIds,
     candidateContactId,
     context,
@@ -209,7 +214,7 @@ function assignToCollege(
     };
     const update_candidate_URL =
         urls.updateCandidate() + "/" + candidateContactId;
-    axios
+    await axios
         .put(update_candidate_URL, current_candidate, {
             headers: urls.qualtricsHeader(),
         })
@@ -221,7 +226,7 @@ function assignToCollege(
         });
 }
 
-function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
+async function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
     // context.log(`--------------------------------------"${chosenGroupIds}"`);
 
     for (let i = 0; i < collegeGroups.length; i++) {
@@ -238,7 +243,7 @@ function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
             };
             const update_college_URL =
                 urls.updateCollegeGroup() + "/" + collegeGroups[i].contactId;
-            axios.put(update_college_URL, current_college, {
+            await axios.put(update_college_URL, current_college, {
                 headers: urls.qualtricsHeader(),
             });
         }
