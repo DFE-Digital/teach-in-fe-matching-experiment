@@ -1,3 +1,4 @@
+import "dotenv/config";
 import config from "../config";
 import { getAllCandidates } from "../qualtrics/candidate-service";
 import { getAllCollegeGroups } from "../qualtrics/college-group-service";
@@ -11,8 +12,8 @@ const collegeGroupModule = require("./college-group");
 const emailModule = require("./email-details");
 
 app.http("send-candidate-details", {
-    methods: ["GET", "POST"],
-    authLevel: "anonymous",
+    methods: ["POST"],
+    authLevel: "function",
     handler: async (request, context) => {
         const testMode = request.query.get("testMode") == "true";
 
