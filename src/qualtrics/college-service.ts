@@ -3,8 +3,13 @@ import { College } from "../types";
 import {
     createOrUpdateContactByExtRef,
     deleteContactById,
+    getAllMailingListContacts,
     getMailingListContactByExtRef,
 } from "./qualtrics-service";
+
+export const getAllColleges = async (): Promise<College[]> => {
+    return await getAllMailingListContacts(config.qualtricsMailingListColleges);
+}
 
 export const createCollege = async (college: College) => {
     await createOrUpdateContactByExtRef(

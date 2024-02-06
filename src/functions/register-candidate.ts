@@ -1,6 +1,9 @@
+import 'dotenv/config'
+
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
+const collegeGroupService = require('../qualtrics/college-group-service');
 
 app.http("register-candidate", {
     methods: ["GET", "POST"],
@@ -17,7 +20,7 @@ app.http("register-candidate", {
         // context.log(`Candidate contactID after returned : "${candidateContactId}" `);
 
         // load all collge-groups data from qualtrics to local list
-        let collegeGroups = await getCollegeGroups(context);
+        let collegeGroups = await collegeGroupService.getAllCollegeGroups();
 
         // get the closest colloges to the candidate by using their lat/long
         let reachableColleges = await getClosestColleges(
@@ -28,7 +31,7 @@ app.http("register-candidate", {
 
         // sort colleges by distance
         let ordredReachableColleges = reachableColleges.sort(
-            (a, b) => a.reachableColleges - b.reachableColleges,
+            (a, b) => a.distance - b.distance,
         );
         if (
             ordredReachableColleges != undefined &&
@@ -72,13 +75,13 @@ app.http("register-candidate", {
                 }
             }
 
-            setCollegeGroupToNeedsInvite(
+            await setCollegeGroupToNeedsInvite(
                 collegeGroups,
                 chosenGroupIds,
                 context,
             );
 
-            assignToCollege(
+            await assignToCollege(
                 collegeIds,
                 candidateContactId,
                 context,
@@ -209,7 +212,7 @@ function assignToCollege(
     };
     const update_candidate_URL =
         urls.updateCandidate() + "/" + candidateContactId;
-    axios
+    await axios
         .put(update_candidate_URL, current_candidate, {
             headers: urls.qualtricsHeader(),
         })
@@ -221,7 +224,7 @@ function assignToCollege(
         });
 }
 
-function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
+async function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
     // context.log(`--------------------------------------"${chosenGroupIds}"`);
 
     for (let i = 0; i < collegeGroups.length; i++) {
@@ -238,7 +241,7 @@ function setCollegeGroupToNeedsInvite(collegeGroups, chosenGroupIds, context) {
             };
             const update_college_URL =
                 urls.updateCollegeGroup() + "/" + collegeGroups[i].contactId;
-            axios.put(update_college_URL, current_college, {
+            await axios.put(update_college_URL, current_college, {
                 headers: urls.qualtricsHeader(),
             });
         }
