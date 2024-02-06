@@ -11,17 +11,6 @@ const qAxios = axios.create({
     },
 });
 
-qAxios.interceptors.request.use((request) => {
-    // console.log('Starting Request', request.url)
-    // console.log(JSON.stringify(request.data))
-    return request;
-});
-
-// qAxios.interceptors.response.use(response => {
-//     console.log('Response:', JSON.stringify(response, null, 1))
-//     return response
-// })
-
 const urlDirectory = (poolId: string) =>
     `${config.qualtricsBaseUrl}/directories/${encodeURIComponent(poolId)}`;
 const urlDirectoryContacts = (poolId: string) =>

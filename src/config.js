@@ -13,4 +13,5 @@ export default {
     dataSourceUrlColleges: process.env.DATA_SOURCE_URL_COLLEGES,
     emailSendWorkflowUrl: process.env.EMAIL_SEND_WORKFLOW_URL,
     emailSendWorkflowKey: process.env.EMAIL_SEND_WORKFLOW_KEY,
+    candidateSurveyUrl: process.env.CANDIDATE_SURVEY_URL,
 };

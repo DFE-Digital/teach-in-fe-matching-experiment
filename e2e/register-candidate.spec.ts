@@ -16,8 +16,7 @@ import {
 } from "../src/qualtrics/college-group-service";
 import { deleteInbox, getInbox, getMessageLinks } from "./mailinator";
 
-const surveyLink =
-  "https://dferesearch.fra1.qualtrics.com/jfe/form/SV_eWMEBTaDUEcIeOy";
+const surveyLink = config.candidateSurveyUrl;
 
 const hash = new Date().getTime();
 
@@ -31,13 +30,7 @@ const candidateEmail = getTestEmail(getTestReference("candidate"));
 
 const collegeRecords = testColleges.test2;
 
-for (const collegeRecord of collegeRecords.colleges) {
-  // collegeRecord.extRef = getTestReference(collegeRecord.extRef);
-  // collegeRecord.embeddedData.groupId = getTestReference(collegeRecord.embeddedData.groupId);
-}
-
 for (const groupRecord of collegeRecords.groups) {
-  // groupRecord.extRef = getTestReference(groupRecord.extRef);
   groupRecord.email = getTestEmail(getTestReference(groupRecord.extRef));
 }
 
@@ -97,20 +90,72 @@ test.describe("Register Candidate", () => {
   });
 
   test("Registering a new candidate", async ({ page }) => {
-    const candidateFirstName = "Test Candidate";
+    const candidateFirstName = "Test";
+    const candidateLastName = "Candidate";
     const candidatePostCode = testPostcodes.test2.postcode;
+    const candidateSubject1 = 'Construction (for example bricklaying, electrical installation or plumbing)';
+    const candidateSubject2 = 'Other: write your subject in the box below';
+    const candidateSubject2Other = 'Automated testing';
+    const candidateQualification = 'Level 4'
+    const candidateExperience = '11 to 20 years';
+    const candidateAvailability = 'Full time';
 
     await page.goto(surveyLink);
 
     console.log("🚀🚀🚀 Filling in the candidate registration 🚀🚀🚀");
-    await page.getByLabel("What is your first name?").fill(candidateFirstName);
-    await page.getByLabel("What is your postcode?").fill(candidatePostCode);
-    await page.getByLabel("What is your email address?").fill(candidateEmail);
+
+    console.log("Intro page");
     await page.locator("#NextButton").click();
+
+    console.log("'Are you aged 18 or over?' page");
+    await page.getByText("Yes").click();
+    await page.locator("#NextButton").click();
+
+    console.log("'Where do you currently live?' page")
+    await page.getByText("England").click();
+    await page.locator("#NextButton").click();
+
+    console.log("'What is your postcode?' page")
+    await page.getByLabel("What is your postcode?").fill(candidatePostCode);
+    await page.locator("#NextButton").click();
+
+    console.log("'What subject are you interested in teaching?' page")
+    await page.getByText(candidateSubject1).click();
+    await page.locator("#NextButton").click();
+
+    console.log("'Which construction subject are you interested in teaching? ' page")
+    await page.getByText(candidateSubject2).click();
+    await page.getByRole('textbox').fill(candidateSubject2Other);
+    await page.locator("#NextButton").click();
+
+    console.log("'What is your highest qualification in that subject?' page")
+    await page.getByText(candidateQualification).click();
+    await page.locator("#NextButton").click();
+
+    console.log("'How much industry experience do you have in the subject you want to teach?' page")
+    await page.getByText(candidateExperience).click();
+    await page.locator("#NextButton").click();
+
+    console.log("'How much time would you want to spend teaching?' page")
+    await page.getByText(candidateAvailability).click();
+    await page.locator("#NextButton").click();
+
+    console.log("'Share your contact details' page")
+    await page.getByLabel("First name").fill(candidateFirstName);
+    await page.getByLabel("Last name").fill(candidateLastName);
+    await page.getByLabel("Email address").fill(candidateEmail);
+    await page.locator("#NextButton").click();
+
+    console.log("Consent page");
+    await page.locator("#NextButton").click();
+
+    // console.log("CAPTCHA page");
+    // await page.locator("#NextButton").click();
+
     console.log("Form submitted");
 
     await page
-      .getByText("Your response has been recorded")
+      .getByText("Thank you for taking part")
       .waitFor({ timeout: 5000 });
 
     console.log("🚀🚀🚀 Waiting for the contact details to be updated 🚀🚀🚀");
@@ -124,8 +169,14 @@ test.describe("Register Candidate", () => {
     );
 
     expect(contact.firstName).toEqual(candidateFirstName);
-    expect(contact.embeddedData!.postcode).toEqual(candidatePostCode);
+    expect(contact.lastName).toEqual(candidateLastName);
     expect(contact.email).toEqual(candidateEmail);
+    expect(contact.embeddedData?.postcode).toEqual(candidatePostCode);
+    expect(contact.embeddedData?.subject).toContain(candidateSubject1);
+    expect(contact.embeddedData?.subSubject).toContain(candidateSubject2);
+    expect(contact.embeddedData?.qualification).toContain(candidateQualification);
+    expect(contact.embeddedData?.experience).toContain(candidateExperience);
+    expect(contact.embeddedData?.availability).toContain(candidateAvailability);
 
     console.log(
       "🚀🚀🚀 Waiting for the college to be stored against the contact 🚀🚀🚀",
