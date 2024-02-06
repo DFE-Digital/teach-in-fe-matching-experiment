@@ -33,7 +33,7 @@ app.http("register-candidate", {
 
         // sort colleges by distance
         let ordredReachableColleges = reachableColleges.sort(
-            (a, b) => b.distance - a.distance,
+            (a, b) => a.distance - b.distance,
         );
         if (
             ordredReachableColleges != undefined &&
