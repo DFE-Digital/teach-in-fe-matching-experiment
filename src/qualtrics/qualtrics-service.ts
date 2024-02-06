@@ -89,8 +89,9 @@ export const getMailingListContactByEmail = async <T extends Contact>(
 
     if (contacts.length > 0) {
         console.log(`Found contact`);
-        contacts[0].extRef = contacts[0].externalDataReference; // Honestly ??!!
-        contacts[0].phone = contacts[0].phoneNumber; // Honestly x 2 ??!!
+        contacts[0].contactId = contacts[0].id;
+        contacts[0].extRef = contacts[0].externalDataReference;
+        contacts[0].phone = contacts[0].phoneNumber;
         return contacts[0];
     } else {
         console.log(`Contact not found`);
@@ -129,8 +130,9 @@ export const getMailingListContactByExtRef = async <T extends Contact>(
 
     if (contacts.length > 0) {
         console.log(`Found contact`);
-        contacts[0].extRef = contacts[0].externalDataReference; // Honestly??!!
-        contacts[0].phone = contacts[0].phoneNumber; // Honestly x 2 ??!!
+        contacts[0].contactId = contacts[0].id;
+        contacts[0].extRef = contacts[0].externalDataReference;
+        contacts[0].phone = contacts[0].phoneNumber;
         return contacts[0];
     } else {
         console.log(`Contact not found`);
@@ -185,7 +187,7 @@ export const createOrUpdateContactByEmail = async (
     if (existingContact == null) {
         createMailingListContact(mailingListId, contact);
     } else {
-        updateContactById(existingContact.id, contact);
+        updateContactById(existingContact.contactId, contact);
     }
 };
 
@@ -201,7 +203,7 @@ export const createOrUpdateContactByExtRef = async (
     if (existingContact == null) {
         createMailingListContact(mailingListId, contact);
     } else {
-        updateContactById(existingContact.id, contact);
+        updateContactById(existingContact.contactId, contact);
     }
 };
 
@@ -223,6 +225,9 @@ export const deleteContactByExtRef = async (
     );
 
     await qAxios.delete(
-        urlDirectoryContact(config.qualtricsContactPoolId, existingContact.id),
+        urlDirectoryContact(
+            config.qualtricsContactPoolId,
+            existingContact.contactId,
+        ),
     );
 };

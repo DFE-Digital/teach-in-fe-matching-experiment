@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { getAllColleges } from "../qualtrics/college-service";
-import { College } from "../types";
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
@@ -10,7 +9,7 @@ const radiusMiles = 40;
 const radiusKm = radiusMiles * 1.609;
 
 app.http("register-candidate", {
-    methods: ["GET", "POST"],
+    methods: ["POST"],
     authLevel: "function",
     handler: async (request, context) => {
         const requestData = await request.json();
@@ -105,23 +104,6 @@ function hasGroupChosenBefore(chosenGroups, groupId) {
         }
     }
     return false;
-}
-
-async function getCollegeGroups(context) {
-    let collegeGroup = [];
-    await axios
-        .get(urls.group(), { headers: urls.qualtricsHeader() })
-        .then((response) => {
-            collegeGroup = response.data.result.elements;
-        })
-        .catch((error) => {
-            context.log.error(
-                `Error while trying to fetch college-groups: `,
-                error,
-            );
-        });
-
-    return collegeGroup;
 }
 
 async function getClosestColleges(candidateLat, candidateLong, context) {

@@ -75,7 +75,7 @@ test.describe("Register Candidate", () => {
     const candidate = await getCandidateByEmail(candidateEmail);
 
     if (candidate) {
-      await deleteContactById(candidate.id!);
+      await deleteContactById(candidate.contactId!);
     }
   };
 
@@ -170,12 +170,12 @@ test.describe("Register Candidate", () => {
       async () => {
         const inbox = await getInbox(collegeGroupInbox);
 
-        for (const message of inbox.msgs) {
+        for (const message of inbox!.msgs) {
           console.log("  Found an email: ", message.id);
 
           const links = await getMessageLinks(collegeGroupInbox, message.id);
 
-          collegeSurveyLink = links.links.find((link) =>
+          collegeSurveyLink = links!.links.find((link) =>
             link.includes("jfe/form"),
           );
 
@@ -217,19 +217,21 @@ test.describe("Register Candidate", () => {
 
     collegeGroup = await retry(
       async () =>
-        await getCollegeGroupByExtRef(collegeRecords.groups[0].extRef),
+        await getCollegeGroupByExtRef(collegeRecords.groups![0].extRef!),
       {
         retries: 12,
         delay: 10000,
         until: (collegeGroup) =>
-          collegeGroup.embeddedData.groupStatus == "Active",
+          collegeGroup.embeddedData?.groupStatus == "Active",
       },
     );
 
     expect(collegeGroup.firstName).toEqual("Joe");
     expect(collegeGroup.lastName).toEqual("Bloggs");
     expect(collegeGroup.email).toEqual(newGroupEmail);
-    expect(collegeGroup.embeddedData.jobTitle).toEqual("Automated tester");
-    expect(collegeGroup.embeddedData.groupStatus).toEqual("Active");
+    expect(collegeGroup.embeddedData?.jobTitle).toEqual("Automated tester");
+    expect(collegeGroup.embeddedData?.groupStatus).toEqual("Active");
+
+
   });
 });

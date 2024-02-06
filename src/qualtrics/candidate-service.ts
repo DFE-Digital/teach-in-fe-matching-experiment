@@ -1,6 +1,15 @@
 import config from "../config";
 import { Candidate } from "../types";
-import { getMailingListContactByEmail } from "./qualtrics-service";
+import {
+    getAllMailingListContacts,
+    getMailingListContactByEmail,
+} from "./qualtrics-service";
+
+export const getAllCandidates = async (): Promise<Candidate[]> => {
+    return await getAllMailingListContacts(
+        config.qualtricsMailingListCandidates,
+    );
+};
 
 export const getCandidateByEmail = async (
     emailAddress: string,

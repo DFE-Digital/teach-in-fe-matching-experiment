@@ -11,4 +11,6 @@ export default {
     mailinatorDomain: process.env.MAILINATOR_DOMAIN,
     dataSourceUrlCollegeGroups: process.env.DATA_SOURCE_URL_COLLEGE_GROUPS,
     dataSourceUrlColleges: process.env.DATA_SOURCE_URL_COLLEGES,
+    emailSendWorkflowUrl: process.env.EMAIL_SEND_WORKFLOW_URL,
+    emailSendWorkflowKey: process.env.EMAIL_SEND_WORKFLOW_KEY,
 };
