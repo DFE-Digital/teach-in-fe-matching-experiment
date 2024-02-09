@@ -237,14 +237,15 @@ function constructEmailCandidateContent(
     }
 
     content += `
-    <dt style="font-weight: bold">Highest qualification level in subject</dt>
-    <dd style="margin-bottom: 10px">${encode(candidate.embeddedData?.qualification)}</dd>
+        <dt style="font-weight: bold">Highest qualification level in subject</dt>
+        <dd style="margin-bottom: 10px">${encode(candidate.embeddedData?.qualification)}</dd>
 
-    <dt style="font-weight: bold">Years of experience in subject</dt>
-    <dd style="margin-bottom: 10px">${encode(candidate.embeddedData?.experience)}</dd>
+        <dt style="font-weight: bold">Years of experience in subject</dt>
+        <dd style="margin-bottom: 10px">${encode(candidate.embeddedData?.experience)}</dd>
 
-    <dt style="font-weight: bold">Hours of teaching they are interested in</dt>
-    <dd style="margin-bottom: 10px">${encode(candidate.embeddedData?.availability)}</dd>
+        <dt style="font-weight: bold">Hours of teaching they are interested in</dt>
+        <dd style="margin-bottom: 10px">${encode(candidate.embeddedData?.availability)}</dd>
+    </dl>
     `;
 
     return content;
