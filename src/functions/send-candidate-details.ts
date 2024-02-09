@@ -46,6 +46,11 @@ app.http("send-candidate-details", {
         // Get all the candidates
         const allCandidates = await getAllCandidates();
 
+        const stats = {
+            numEmails: 0,
+            numCandidates: 0,
+        }
+
         for (const collegeGroup of activeCollegeGroups) {
             context.info(
                 `Processing college group ${collegeGroup.extRef} [${collegeGroup.embeddedData.groupName}]`,
@@ -111,6 +116,8 @@ app.http("send-candidate-details", {
                             candidate,
                             colleges: candidateMatchedColleges,
                         });
+
+                        stats.numCandidates++;
                     }
                 }
 
@@ -131,6 +138,8 @@ app.http("send-candidate-details", {
 
                 await sendEmail(collegeGroup, subject, emailContent);
 
+                stats.numEmails++;
+
                 for (const candidate of dataForEmail.candidates) {
                     context.info(
                         `Updating candidate ${candidate.candidate.contactId}`,
@@ -149,6 +158,7 @@ app.http("send-candidate-details", {
         return {
             body: JSON.stringify({
                 result: "success",
+                stats
             }),
         };
     },
