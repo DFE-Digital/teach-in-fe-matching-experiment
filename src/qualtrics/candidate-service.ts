@@ -3,6 +3,7 @@ import { Candidate } from "../types";
 import {
     getAllMailingListContacts,
     getMailingListContactByEmail,
+    updateContactById,
 } from "./qualtrics-service";
 
 export const getAllCandidates = async (): Promise<Candidate[]> => {
@@ -18,4 +19,8 @@ export const getCandidateByEmail = async (
         config.qualtricsMailingListCandidates,
         emailAddress,
     );
+};
+
+export const updateCandidate = async (candidate: Candidate) => {
+    updateContactById(candidate.contactId, candidate);
 };
