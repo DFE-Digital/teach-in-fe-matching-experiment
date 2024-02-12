@@ -17,6 +17,9 @@ module.exports = {
     invokeEmailSenderWorkflow: function () {
         return "https://fra1.qualtrics.com/inbound-event/v1/events/json/triggers?urlTokenId=93b4c9ad-94ae-42f8-a8fc-dc3c3b76dcb0";
     },
+    invokeInviteReminderWorkflow: function () {
+        return "https://fra1.qualtrics.com/inbound-event/v1/events/json/triggers?urlTokenId=18ac8f8e-78b0-4876-bf59-053828c7be68";
+    },
     qualtricsHeader: function () {
         return {
             Accept: "application/json",

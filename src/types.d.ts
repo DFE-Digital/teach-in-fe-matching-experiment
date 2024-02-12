@@ -41,8 +41,11 @@ export type College = Contact & {
 
 export type CollegeGroup = Contact & {
     embeddedData?: {
+        unsubscribed?: string
         groupName?: string;
         jobTitle?: string;
+        dateInvited?: string;
+        invitationAttempt?: string
         groupStatus?: "Unregistered" | "NeedsInvite" | "Invited" | "Active";
     };
 };
