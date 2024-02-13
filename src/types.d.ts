@@ -40,8 +40,8 @@ export type College = Contact & {
 };
 
 export type CollegeGroup = Contact & {
+    unsubscribed?: string,
     embeddedData?: {
-        unsubscribed?: string
         groupName?: string;
         jobTitle?: string;
         dateInvited?: string;

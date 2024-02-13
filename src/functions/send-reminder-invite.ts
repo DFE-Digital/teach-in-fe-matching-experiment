@@ -15,7 +15,7 @@ app.http("send-reminder-invite", {
         let activeCollegeGroups = (await getAllCollegeGroups()).filter(
             (collegeGroup) =>
                 collegeGroup.embeddedData?.groupStatus == "Invited"
-                && !collegeGroup.embeddedData?.unsubscribed
+                && !collegeGroup?.unsubscribed
                 && (collegeGroup.embeddedData.invitationAttempt == undefined || parseInt(collegeGroup.embeddedData.invitationAttempt) < 3)
                 && moreThanOneWeek(currentDate, new Date(collegeGroup.embeddedData.dateInvited))
         );
