@@ -20,6 +20,9 @@ module.exports = {
     invokeInviteReminderWorkflow: function () {
         return "https://fra1.qualtrics.com/inbound-event/v1/events/json/triggers?urlTokenId=18ac8f8e-78b0-4876-bf59-053828c7be68";
     },
+    invokeInviteCollegeWorkflow: function () {
+        return "https://fra1.qualtrics.com/inbound-event/v1/events/json/triggers?urlTokenId=ea39d98b-ae0d-44a9-9430-34f73a56a6e4";
+    },
     qualtricsHeader: function () {
         return {
             Accept: "application/json",
