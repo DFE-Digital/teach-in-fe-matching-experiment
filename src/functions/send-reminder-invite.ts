@@ -1,7 +1,6 @@
 import "dotenv/config";
 import config from "../config";
-import { getAllCollegeGroups, updateInvitationDetails } from "../qualtrics/college-group-service";
-import { moreThanOneWeek, formatDate } from "../qualtrics/data-service";
+import { getAllCollegeGroups, formatDate } from "../qualtrics/college-group-service";
 import { app } from "@azure/functions";
 import axios from "axios";
 const urls = require("./urls");
@@ -34,7 +33,7 @@ app.http("send-reminder-invite", {
             let attempt = 2;
             if (activeCollegeGroups[x].embeddedData.invitationAttempt != undefined)
                 attempt = parseInt(activeCollegeGroups[x].embeddedData.invitationAttempt)+1;
-            updateInvitationDetails(activeCollegeGroups[x].contactId, attempt, formatDate(currentDate, 'yyyy-mm-dd'), "Invited");
+            updateInvitationDetails(activeCollegeGroups[x].contactId, attempt, formatDate(currentDate, 'yyyy-mm-dd'));
         }
         return {
             body: JSON.stringify({
@@ -44,3 +43,28 @@ app.http("send-reminder-invite", {
     },
 
 });
+
+function moreThanOneWeek (currentDate: any, invitedDate: any) {
+    let days: any = Math.abs(currentDate - invitedDate);
+    let diffDays = Math.ceil(days / (1000 * 60 * 60 * 24)); 
+    if (diffDays > 7) 
+        return true;
+    return false;
+};
+
+async function updateInvitationDetails(
+    contactId: string, 
+    attempt: number, 
+    currentFormattedDate: string) {
+    let collegeGroup = {
+        embeddedData: {
+            invitationAttempt: attempt,
+            dateInvited: currentFormattedDate
+        },
+    };
+    const update_college_URL =
+        urls.updateCollegeGroup() + "/" + contactId;
+    await axios.put(update_college_URL, collegeGroup, {
+        headers: urls.qualtricsHeader(),
+    });
+}

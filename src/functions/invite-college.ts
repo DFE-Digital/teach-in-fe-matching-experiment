@@ -1,7 +1,6 @@
 import "dotenv/config";
 import config from "../config";
-import { getAllCollegeGroups, updateInvitationDetails } from "../qualtrics/college-group-service";
-import { formatDate } from "../qualtrics/data-service";
+import { getAllCollegeGroups, formatDate } from "../qualtrics/college-group-service";
 import { app } from "@azure/functions";
 import axios from "axios";
 const urls = require("./urls");
@@ -22,6 +21,7 @@ app.http("invite-college", {
         for (let x = 0; x < activeCollegeGroups.length; x++) {
             const currentEmail = {
                 email: activeCollegeGroups[x].email,
+                groupName: activeCollegeGroups[x].embeddedData.groupName,
                 subject: "",
                 body: "",
                 key: config.emailSendWorkflowKey,
@@ -30,7 +30,7 @@ app.http("invite-college", {
             await axios.post(urls.invokeInviteCollegeWorkflow(), currentEmail);
 
             let attempt = 1;
-            updateInvitationDetails(activeCollegeGroups[x].contactId, attempt, formatDate(currentDate, 'yyyy-mm-dd'), 'Invited');
+            setCollegeToInvitd(activeCollegeGroups[x].contactId, attempt, formatDate(currentDate, 'yyyy-mm-dd'));
         }
         return {
             body: JSON.stringify({
@@ -40,3 +40,21 @@ app.http("invite-college", {
     },
 
 });
+
+async function setCollegeToInvitd(
+    contactId: string, 
+    attempt: number, 
+    currentFormattedDate: string) {
+    let collegeGroup = {
+        embeddedData: {
+            invitationAttempt: attempt,
+            dateInvited: currentFormattedDate,
+            groupStatus: "Invited"
+        },
+    };
+    const update_college_URL =
+        urls.updateCollegeGroup() + "/" + contactId;
+    await axios.put(update_college_URL, collegeGroup, {
+        headers: urls.qualtricsHeader(),
+    });
+}

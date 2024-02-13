@@ -6,8 +6,6 @@ import {
     getAllMailingListContacts,
     getMailingListContactByExtRef,
 } from "./qualtrics-service";
-import axios from "axios";
-const urls = require("../functions/urls");
 
 export const getAllCollegeGroups = async (): Promise<CollegeGroup[]> => {
     return await getAllMailingListContacts(
@@ -45,20 +43,12 @@ export const getCollegeGroupByExtRef = async (
     );
 };
 
-export const updateInvitationDetails = async (
-    contactId: string, 
-    attempt: number, 
-    currentFormattedDate: string, 
-    currentStatus: string) => {
-    let collegeGroup = {
-        embeddedData: {
-            invitationAttempt: attempt,
-            dateInvited: currentFormattedDate
-        },
-    };
-    const update_college_URL =
-        urls.updateCollegeGroup() + "/" + contactId;
-    await axios.put(update_college_URL, collegeGroup, {
-        headers: urls.qualtricsHeader(),
-    });
-}
+export const formatDate = (date: any, format: string): string => {
+    const map = {
+        mm: (date.getMonth() + 1).toString().padStart(2, "0"),
+        dd: date.getDate().toString().padStart(2, "0"),
+        yyyy: date.getFullYear()
+    }
+
+    return format.replace(/mm|dd|yyyy/gi, matched => map[matched]);
+};
