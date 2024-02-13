@@ -7,7 +7,7 @@ import {
     getMailingListContactByExtRef,
 } from "./qualtrics-service";
 import axios from "axios";
-const urls = require("./urls");
+const urls = require("../functions/urls");
 
 export const getAllCollegeGroups = async (): Promise<CollegeGroup[]> => {
     return await getAllMailingListContacts(
