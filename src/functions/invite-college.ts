@@ -15,7 +15,7 @@ app.http("invite-college", {
         let activeCollegeGroups = (await getAllCollegeGroups()).filter(
             (collegeGroup) =>
                 collegeGroup.embeddedData?.groupStatus == "NeedsInvite"
-                && !collegeGroup.embeddedData?.unsubscribed
+                && !collegeGroup?.unsubscribed
         );
 
         for (let x = 0; x < activeCollegeGroups.length; x++) {
