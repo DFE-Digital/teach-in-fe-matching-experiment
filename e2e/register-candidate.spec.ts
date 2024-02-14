@@ -173,7 +173,7 @@ test.describe("Register Candidate", () => {
     expect(contact.email).toEqual(candidateEmail);
     expect(contact.embeddedData?.postcode).toEqual(candidatePostCode);
     expect(contact.embeddedData?.subject).toContain(candidateSubject1);
-    expect(contact.embeddedData?.subSubject).toContain(candidateSubject2);
+    expect(contact.embeddedData?.subSubject).toContain(candidateSubject2Other);
     expect(contact.embeddedData?.qualification).toContain(candidateQualification);
     expect(contact.embeddedData?.experience).toContain(candidateExperience);
     expect(contact.embeddedData?.availability).toContain(candidateAvailability);
