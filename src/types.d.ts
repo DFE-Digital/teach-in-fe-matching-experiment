@@ -28,6 +28,7 @@ export type Candidate = Contact & {
         qualification?: string;
         experience?: string;
         availability?: string;
+        matched?: boolean;
     };
 };
 
