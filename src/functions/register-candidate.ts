@@ -29,6 +29,7 @@ app.http("register-candidate", {
         let reachableColleges = await getClosestColleges(
             candidateLat,
             candidateLong,
+            collegeGroups,
         );
 
         // sort colleges by distance
@@ -103,7 +104,7 @@ function hasGroupChosenBefore(chosenGroups, groupId) {
     return false;
 }
 
-async function getClosestColleges(candidateLat, candidateLong) {
+async function getClosestColleges(candidateLat, candidateLong, collegeGroups) {
     const closestColleges: any[] = [];
 
     const allColleges = await getAllColleges();
@@ -114,24 +115,26 @@ async function getClosestColleges(candidateLat, candidateLong) {
         const extRef = college.extRef;
         const collegeGroupId = college.embeddedData?.groupId;
 
-        const R = 6371; // Radius of the earth in km
-        const dLat = deg2rad(collegeLat - candidateLat); // deg2rad below
-        const dLon = deg2rad(collegeLong - candidateLong);
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(deg2rad(candidateLat)) *
-                Math.cos(deg2rad(collegeLat)) *
-                Math.sin(dLon / 2) *
-                Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = R * c;
-        if (d < radiusKm) {
-            const currentDistance = {
-                collegeId: extRef,
-                distance: d,
-                collegeGroupId: collegeGroupId,
-            };
-            closestColleges.push(currentDistance);
+        if (isSubscribed(collegeGroups, collegeGroupId)) {
+            const R = 6371; // Radius of the earth in km
+            const dLat = deg2rad(collegeLat - candidateLat); // deg2rad below
+            const dLon = deg2rad(collegeLong - candidateLong);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(candidateLat)) *
+                    Math.cos(deg2rad(collegeLat)) *
+                    Math.sin(dLon / 2) *
+                    Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c;
+            if (d < radiusKm) {
+                const currentDistance = {
+                    collegeId: extRef,
+                    distance: d,
+                    collegeGroupId: collegeGroupId,
+                };
+                closestColleges.push(currentDistance);
+            }
         }
     }
 
@@ -140,6 +143,17 @@ async function getClosestColleges(candidateLat, candidateLong) {
 
 function deg2rad(deg) {
     return deg * (Math.PI / 180);
+}
+
+function isSubscribed(collegeGroups, collegeGroupId) {
+    if (collegeGroups.length > 0) {
+        for (let i = 0; i < collegeGroups.length; i++) {
+            if (collegeGroups[i].extRef == collegeGroupId
+                && !collegeGroups[i].unsubscribed) 
+            return true;
+        }
+    }
+    return false;
 }
 
 async function assignToCollege(
