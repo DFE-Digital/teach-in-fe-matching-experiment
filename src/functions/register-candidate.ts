@@ -1,5 +1,7 @@
 import "dotenv/config";
+import config from "../config";
 import { getAllColleges } from "../qualtrics/college-service";
+import { Contact } from "../types";
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
@@ -11,16 +13,14 @@ const radiusKm = radiusMiles * 1.609;
 app.http("register-candidate", {
     methods: ["POST"],
     authLevel: "function",
-    handler: async (request, context) => {
+    handler: async (request, console) => {
         const requestData = await request.json();
 
         const candidateLat = requestData.lat; //51.496351
         const candidateLong = requestData.long; // -0.087925
-        const candidateContactId = await getContactId(
+        const candidateContact: Contact = await getCandidateContact(
             requestData.email,
-            context,
         );
-        // context.log(`Candidate contactID after returned : "${candidateContactId}" `);
 
         // load all collge-groups data from qualtrics to local list
         let collegeGroups = await collegeGroupService.getAllCollegeGroups();
@@ -29,18 +29,18 @@ app.http("register-candidate", {
         let reachableColleges = await getClosestColleges(
             candidateLat,
             candidateLong,
-            context,
         );
 
         // sort colleges by distance
         let ordredReachableColleges = reachableColleges.sort(
             (a, b) => a.distance - b.distance,
         );
+        
+        let collegeIds: any[] = [];
         if (
             ordredReachableColleges != undefined &&
             ordredReachableColleges.length > 0
         ) {
-            let collegeIds: any[] = [];
             let chosenGroupIds: any[] = [];
             let waitingListGroup: any[] = [];
             let collegeCount = 0;
@@ -53,7 +53,6 @@ app.http("register-candidate", {
                             ordredReachableColleges[i].collegeGroupId,
                         )
                     ) {
-                        // context.log(`NOT CHOSEN - NOT CHOSEN - NOT CHOSEN : "${ordredReachableColleges[i].collegeGroupId}" `);
                         collegeIds.push(ordredReachableColleges[i].collegeId);
                         chosenGroupIds.push(
                             ordredReachableColleges[i].collegeGroupId,
@@ -81,17 +80,15 @@ app.http("register-candidate", {
             await setCollegeGroupToNeedsInvite(
                 collegeGroups,
                 chosenGroupIds,
-                context,
-            );
-
-            await assignToCollege(
-                collegeIds,
-                candidateContactId,
-                context,
-                candidateLat,
-                candidateLong,
             );
         }
+
+        await assignToCollege(
+            collegeIds,
+            candidateContact,
+            candidateLat,
+            candidateLong,
+        );
 
         return { body: JSON.stringify(ordredReachableColleges) };
     },
@@ -106,7 +103,7 @@ function hasGroupChosenBefore(chosenGroups, groupId) {
     return false;
 }
 
-async function getClosestColleges(candidateLat, candidateLong, context) {
+async function getClosestColleges(candidateLat, candidateLong) {
     const closestColleges: any[] = [];
 
     const allColleges = await getAllColleges();
@@ -146,18 +143,17 @@ function deg2rad(deg) {
 }
 
 async function assignToCollege(
-    collegeIds,
-    candidateContactId,
-    context,
-    candidateLat,
-    candidateLong,
+    collegeIds: any,
+    candidateContact: Contact,
+    candidateLat: string,
+    candidateLong: string,
 ) {
-    // context.log(`*************************************** collegeIds = "${collegeIds}" candidateLat = "${candidateLat}" candidateLong = "${candidateLong}" candidateContactId = "${candidateContactId}"`);
     let college1Id = "";
     let college2Id = "";
     let college3Id = "";
     let college4Id = "";
     let college5Id = "";
+    let matchedValue = false;
     for (let j = 0; j < collegeIds.length; j++) {
         switch (j) {
             case 0:
@@ -179,9 +175,11 @@ async function assignToCollege(
             default:
                 break;
         }
+        matchedValue = true;
     }
     let current_candidate = {
         embeddedData: {
+            matched: matchedValue,
             college1Id: college1Id,
             college2Id: college2Id,
             college3Id: college3Id,
@@ -192,33 +190,40 @@ async function assignToCollege(
         },
     };
     const update_candidate_URL =
-        urls.updateCandidate() + "/" + candidateContactId;
+        urls.updateCandidate() + "/" + candidateContact.contactId;
     await axios
         .put(update_candidate_URL, current_candidate, {
             headers: urls.qualtricsHeader(),
         })
         .then((response) => {
-            context.log(`SUCCESS`);
+            console.log(`SUCCESS`);
         })
         .catch((error) => {
-            context.log(`Error when trying to update candidate: "${error}" `);
+            console.log(`Error when trying to update candidate: "${error}" `);
         });
+
+    if (!matchedValue) {
+        const currentEmail = {
+            email: candidateContact.email,
+            firstName: candidateContact.firstName,
+            subject: "",
+            body: "",
+            key: config.emailSendWorkflowKey,
+        };
+        await axios.post(urls.invokeInviteNoMatchWorkflow(), currentEmail);
+    }
 }
 
 async function setCollegeGroupToNeedsInvite(
     collegeGroups,
     chosenGroupIds,
-    context,
 ) {
-    // context.log(`--------------------------------------"${chosenGroupIds}"`);
 
     for (let i = 0; i < collegeGroups.length; i++) {
         if (
             chosenGroupIds.includes(collegeGroups[i].extRef) &&
             collegeGroups[i].embeddedData.groupStatus == "Unregistered"
         ) {
-            // context.log(`++----------------------------------++ collegeContactId = "${collegeGroups[i].extRef}" collegeStatus = "${collegeGroups[i].embeddedData.groupStatus}"`);
-
             let current_college = {
                 embeddedData: {
                     groupStatus: "NeedsInvite",
@@ -233,23 +238,25 @@ async function setCollegeGroupToNeedsInvite(
     }
 }
 
-async function getContactId(candidateEmail, context) {
-    // context.log(`///////////////////////////////////// candidateEmail : "${candidateEmail}" `);
-    let contactId = "";
+async function getCandidateContact(candidateEmail) {
+    let contact: Contact;
     await axios
         .get(urls.candidate(), { headers: urls.qualtricsHeader() })
         .then((response) => {
             let candidates = response.data.result.elements;
             for (let candidate in candidates) {
                 if (candidates[candidate].email == candidateEmail) {
-                    contactId = candidates[candidate].contactId;
-                    // context.log(`Candidate contactID : "${contactId}" `);
-                    return contactId;
+                    contact = {
+                        contactId: candidates[candidate].contactId,
+                        firstName: candidates[candidate].firstName,
+                        email: candidates[candidate].email
+                    }
+                    return contact;
                 }
             }
         })
         .catch((error) => {
-            context.log(`Error while trying to get candidates: "${error}" `);
+            console.log(`Error while trying to get candidates: "${error}" `);
         });
-    return contactId;
+    return contact;
 }

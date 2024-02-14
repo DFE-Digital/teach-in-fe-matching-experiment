@@ -23,6 +23,9 @@ module.exports = {
     invokeInviteCollegeWorkflow: function () {
         return "https://fra1.qualtrics.com/inbound-event/v1/events/json/triggers?urlTokenId=ea39d98b-ae0d-44a9-9430-34f73a56a6e4";
     },
+    invokeInviteNoMatchWorkflow: function () {
+        return "https://fra1.qualtrics.com/inbound-event/v1/events/json/triggers?urlTokenId=1c6547d3-3cf2-4e58-9271-4f5bc5770031";
+    },
     qualtricsHeader: function () {
         return {
             Accept: "application/json",
