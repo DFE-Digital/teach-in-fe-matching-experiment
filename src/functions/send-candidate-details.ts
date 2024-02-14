@@ -134,7 +134,7 @@ app.http("send-candidate-details", {
 
                 context.info("Sending email");
 
-                const subject = `Contact details of potential teachers for ${collegeGroup.embeddedData.groupName}`;
+                const subject = `Potential teachers for your college`;
 
                 await sendEmail(collegeGroup, subject, emailContent);
 
@@ -185,7 +185,7 @@ function constructEmailContent(data: CollegeGroupWithCandidateData) {
     let content = `
     <div style="font-size:19px; font-family:Arial,Helvetica,sans-serif;">
         <p><img src="https://dferesearch.eu.qualtrics.com/CP/Graphic.php?IM=IM_3UDhH8iz4YHUyIS" alt="Department for Education logo" /></p>
-        <p>Hello ${encode(collegeGroup.firstName)} ${encode(collegeGroup.lastName)},</p>
+        <p>Hello,</p>
         <p>Thank you for agreeing to take part in our trial to introduce potential FE teachers to local colleges.</p>
         <p>Here are the contact details of potential teachers who are local to your college.</p>
         <p>Note that this information has not been verified by DfE.</p>
@@ -193,7 +193,7 @@ function constructEmailContent(data: CollegeGroupWithCandidateData) {
         <p>We ask that you:</p>
         <ul>
             <li>at a minimum, contact each person listed here to invite them to have an informal conversation about teaching, or acknowledge their interest and explain why they&rsquo;re not suitable at this time</li>
-            <li>keep a record of your interactions with these potential teachers and outcomes of any engagement with them, so you can share that information with DfE at the end of this trial. [Visit our website to see what kind of information to record and get a helpful template to store those details.]</li>
+            <li>keep a record of your interactions with these potential teachers and outcomes of any engagement with them, so you can share that information with DfE at the end of this trial. <a href="https://www.teach-in-further-education.campaign.gov.uk/matching-trial-for-colleges">Visit our website to see what kind of information to record and get a helpful template to store those details.</a></li>
         </ul>
     `;
 
