@@ -9,9 +9,6 @@ app.http("re-activate-college", {
     methods: ["GET", "POST"],
     authLevel: "function",
     handler: async (request, context) => {
-        const timeElapsed = Date.now();
-        const currentDate = new Date(timeElapsed);
-
         let activeCollegeGroups = (await getAllCollegeGroups()).filter(
             (collegeGroup) =>
                 collegeGroup.embeddedData?.groupStatus == "Active"
