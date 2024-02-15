@@ -18,6 +18,7 @@ app.http("register-candidate", {
 
         const candidateLat = requestData.lat; //51.496351
         const candidateLong = requestData.long; // -0.087925
+        const candidateRegion = requestData.region; 
         const candidateContact: Contact = await getCandidateContact(
             requestData.email,
         );
@@ -89,6 +90,7 @@ app.http("register-candidate", {
             candidateContact,
             candidateLat,
             candidateLong,
+            candidateRegion,
         );
 
         return { body: JSON.stringify(ordredReachableColleges) };
@@ -161,6 +163,7 @@ async function assignToCollege(
     candidateContact: Contact,
     candidateLat: string,
     candidateLong: string,
+    candidateRegion: string,
 ) {
     let college1Id = "";
     let college2Id = "";
@@ -201,6 +204,7 @@ async function assignToCollege(
             college5Id: college5Id,
             lat: candidateLat,
             long: candidateLong,
+            rigion: candidateRegion,
         },
     };
     const update_candidate_URL =

@@ -23,6 +23,7 @@ export type Candidate = Contact & {
         college5Status?: CandidateCollegeMatchStatus;
         lat?: number;
         long?: number;
+        region?: string;
         subject?: string;
         subSubject?: string;
         qualification?: string;
