@@ -4,7 +4,7 @@ import {
     getAllCandidates,
     updateCandidate,
 } from "../qualtrics/candidate-service";
-import { getAllCollegeGroups } from "../qualtrics/college-group-service";
+import { getAllCollegeGroups, formatDate } from "../qualtrics/college-group-service";
 import { getAllColleges } from "../qualtrics/college-service";
 import { Candidate, College, CollegeGroup } from "../types";
 import { encode } from "html-entities";
@@ -39,6 +39,8 @@ app.http("send-candidate-details", {
                 collegeGroup.extRef?.startsWith("test-group"),
             );
         }
+
+        const currentDate = formatDate(new Date(Date.now()), 'yyyy-mm-dd');
 
         // Get all the colleges
         const allColleges = await getAllColleges();
@@ -104,6 +106,10 @@ app.http("send-candidate-details", {
                             candidate.embeddedData[
                                 `college${collegeNum}Status`
                             ] = "Sent";
+                            
+                            candidate.embeddedData[
+                                `college${collegeNum}DateSent`
+                            ] = currentDate;
                         }
                     }
 
