@@ -3,7 +3,7 @@ import 'dotenv/config'
 import config from "./src/config";
 import { createCollegeGroup, getCollegeGroupByExtRef } from "./src/qualtrics/college-group-service";
 import { createCollege, getCollegeByExtRef } from "./src/qualtrics/college-service";
-import { College, CollegeGroup } from "./src/types";
+import { College } from "./src/types";
 
 import axios from 'axios';
 import { exit } from 'process';
@@ -45,7 +45,7 @@ type PostcodesIOResponse = {
 }
 
 // const createEmailAddress = (collegeGroup: CollegeGroup) => `${collegeGroup.extRef}@${config.mailinatorDomain}`;
-const createEmailAddress = (collegeGroup: SourceCollegeGroup) => `college.match+${collegeGroup.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}@education.gov.uk`;
+const createEmailAddress = (collegeGroup: SourceCollegeGroup) => `college.match+${collegeGroup.name.toLowerCase().trim().substring(0, 25).trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}@education.gov.uk`;
 
 const getSourceCollegeGroupId = (college: SourceCollege, collegeGroups: SourceCollegeGroup[]) : string => {
     if(college.parentId) {
@@ -137,6 +137,7 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
 
             if(resetGroupStatus) {
                 qualtricsCollegeGroup.embeddedData.groupStatus = 'Unregistered';
+                qualtricsCollegeGroup.embeddedData.invitationAttempt = null;
             }
         }
 
