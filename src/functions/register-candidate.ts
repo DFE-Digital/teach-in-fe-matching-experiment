@@ -44,7 +44,7 @@ app.http("register-candidate", {
 
         for(const college of orderedReachableColleges) {
             // Have we found the group before?
-            const existingMatch = matches.find(match => match.collegeGroupId = college.collegeGroupId);
+            const existingMatch = matches.find(match => match.collegeGroupId == college.collegeGroupId);
 
             if(existingMatch) {
                 existingMatch.colleges.push(college.collegeId);
