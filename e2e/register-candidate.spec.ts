@@ -10,7 +10,7 @@ import {
   deleteCollegeByExtRef,
 } from "../src/qualtrics/college-service";
 import {
-  createCollegeGroup,
+  createOrUpdateCollegeGroup,
   deleteCollegeGroupByExtRef,
   getCollegeGroupByExtRef,
 } from "../src/qualtrics/college-group-service";
@@ -45,7 +45,7 @@ const createTestColleges = async () => {
 
   for (const record of collegeRecords.groups) {
     console.log("Creating college group", record.embeddedData.groupName);
-    await createCollegeGroup(record);
+    await createOrUpdateCollegeGroup(record);
   }
 };
 
@@ -166,7 +166,7 @@ test.describe("Register Candidate", () => {
       {
         retries: 12,
         delay: 10000,
-        until: (contact) => contact?.embeddedData?.college1Id != null,
+        until: (contact) => contact?.embeddedData?.collegeGroup1Id != null,
 
       },
     );
@@ -189,12 +189,12 @@ test.describe("Register Candidate", () => {
       {
         retries: 12,
         delay: 10000,
-        until: (contact) => contact?.embeddedData?.college1Id != null,
+        until: (contact) => contact?.embeddedData?.collegeGroup1Id != null,
       },
     );
 
-    expect(contact.embeddedData!.college1Id).toEqual(
-      collegeRecords.colleges![0].extRef,
+    expect(contact.embeddedData!.collegeGroup1Id).toEqual(
+      collegeRecords.groups![0].extRef,
     );
 
     console.log("🚀🚀🚀 Waiting for the college to be updated 🚀🚀🚀");

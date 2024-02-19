@@ -1,7 +1,9 @@
 import "dotenv/config";
 import config from "../config";
 import { getAllColleges } from "../qualtrics/college-service";
-import { Contact } from "../types";
+import { CollegeGroup } from "../types";
+import { createOrUpdateCollegeGroup } from "../qualtrics/college-group-service";
+import { getCandidateByEmail, updateCandidate } from "../qualtrics/candidate-service";
 const { app } = require("@azure/functions");
 const axios = require("axios");
 const urls = require("./urls");
@@ -19,7 +21,7 @@ app.http("register-candidate", {
         const candidateLat = requestData.lat; //51.496351
         const candidateLong = requestData.long; // -0.087925
         const candidateRegion = requestData.region; 
-        const candidateContact: Contact = await getCandidateContact(
+        const candidate = await getCandidateByEmail(
             requestData.email,
         );
 
@@ -27,84 +29,69 @@ app.http("register-candidate", {
         let collegeGroups = await collegeGroupService.getAllCollegeGroups();
 
         // get the closest colloges to the candidate by using their lat/long
-        let reachableColleges = await getClosestColleges(
+        const reachableColleges = await getClosestColleges(
             candidateLat,
             candidateLong,
             collegeGroups,
         );
 
         // sort colleges by distance
-        let ordredReachableColleges = reachableColleges.sort(
+        const orderedReachableColleges = reachableColleges.sort(
             (a, b) => a.distance - b.distance,
         );
         
-        let collegeIds: any[] = [];
-        if (
-            ordredReachableColleges != undefined &&
-            ordredReachableColleges.length > 0
-        ) {
-            let chosenGroupIds: any[] = [];
-            let waitingListGroup: any[] = [];
-            let collegeCount = 0;
-            for (let i = 0; i < ordredReachableColleges.length; i++) {
-                if (collegeCount < 5) {
-                    // do the following until we get to 5 colleges
-                    if (
-                        !hasGroupChosenBefore(
-                            chosenGroupIds,
-                            ordredReachableColleges[i].collegeGroupId,
-                        )
-                    ) {
-                        collegeIds.push(ordredReachableColleges[i].collegeId);
-                        chosenGroupIds.push(
-                            ordredReachableColleges[i].collegeGroupId,
-                        );
-                        collegeCount++;
-                    } else {
-                        waitingListGroup.push({
-                            collegeGroupId:
-                                ordredReachableColleges[i].collegeGroupId,
-                            collegeId: ordredReachableColleges[i].collegeId,
-                            distance: ordredReachableColleges[i].distance,
-                        });
-                    }
-                }
-            }
-            if (collegeCount < 5 && waitingListGroup.length > 0) {
-                for (let k = 0; k < waitingListGroup.length; k++) {
-                    if (collegeCount < 5) {
-                        collegeIds.push(waitingListGroup[k].collegeId);
-                        collegeCount++;
-                    }
-                }
-            }
+        const matches = [];
 
-            await setCollegeGroupToNeedsInvite(
-                collegeGroups,
-                chosenGroupIds,
-            );
+        for(const college of orderedReachableColleges) {
+            // Have we found the group before?
+            const existingMatch = matches.find(match => match.collegeGroupId = college.collegeGroupId);
+
+            if(existingMatch) {
+                existingMatch.colleges.push(college.collegeId);
+            } else {
+                matches.push({
+                    collegeGroupId: college.collegeGroupId,
+                    colleges: [college.collegeId]
+                })
+            }
         }
 
-        await assignToCollege(
-            collegeIds,
-            candidateContact,
-            candidateLat,
-            candidateLong,
-            candidateRegion,
-        );
+        candidate.embeddedData.matched = matches.length > 0;
+        candidate.embeddedData.lat = candidateLat;
+        candidate.embeddedData.long = candidateLong;
+        candidate.embeddedData.region = candidateRegion;
 
-        return { body: JSON.stringify(ordredReachableColleges) };
+        for(let i = 0; i < Math.min(matches.length, 5); ++i) {
+            candidate.embeddedData[`collegeGroup${i + 1}Id`] = matches[i].collegeGroupId;
+            candidate.embeddedData[`collegeGroup${i + 1}Colleges`] = matches[i].colleges.join(',');
+
+            const updatedCollegeGroup: CollegeGroup = {
+                extRef: matches[i].collegeGroupId,
+                embeddedData: {
+                    groupStatus: "NeedsInvite",
+                },
+            };
+            
+            await createOrUpdateCollegeGroup(updatedCollegeGroup);
+        }
+
+        updateCandidate(candidate);
+
+        if (matches.length == 0) {
+            const currentEmail = {
+                email: candidate.email,
+                firstName: candidate.firstName,
+                subject: "",
+                body: "",
+                key: config.emailSendWorkflowKey,
+            };
+            await axios.post(urls.invokeInviteNoMatchWorkflow(), currentEmail);
+        }
+
+        return { body: JSON.stringify(orderedReachableColleges) };
     },
 });
 
-function hasGroupChosenBefore(chosenGroups, groupId) {
-    if (chosenGroups.length > 0) {
-        for (let i = 0; i < chosenGroups.length; i++) {
-            if (chosenGroups[i] == groupId) return true;
-        }
-    }
-    return false;
-}
 
 async function getClosestColleges(candidateLat, candidateLong, collegeGroups) {
     const closestColleges: any[] = [];
@@ -156,125 +143,4 @@ function isSubscribed(collegeGroups, collegeGroupId) {
         }
     }
     return false;
-}
-
-async function assignToCollege(
-    collegeIds: any,
-    candidateContact: Contact,
-    candidateLat: string,
-    candidateLong: string,
-    candidateRegion: string,
-) {
-    let college1Id = "";
-    let college2Id = "";
-    let college3Id = "";
-    let college4Id = "";
-    let college5Id = "";
-    let matchedValue = false;
-    for (let j = 0; j < collegeIds.length; j++) {
-        switch (j) {
-            case 0:
-                college1Id = collegeIds[j];
-                break;
-            case 1:
-                college2Id = collegeIds[j];
-                break;
-            case 2:
-                college3Id = collegeIds[j];
-                break;
-            case 3:
-                college4Id = collegeIds[j];
-                break;
-            case 4:
-                college5Id = collegeIds[j];
-                break;
-
-            default:
-                break;
-        }
-        matchedValue = true;
-    }
-    let current_candidate = {
-        embeddedData: {
-            matched: matchedValue,
-            college1Id: college1Id,
-            college2Id: college2Id,
-            college3Id: college3Id,
-            college4Id: college4Id,
-            college5Id: college5Id,
-            lat: candidateLat,
-            long: candidateLong,
-            rigion: candidateRegion,
-        },
-    };
-    const update_candidate_URL =
-        urls.updateCandidate() + "/" + candidateContact.contactId;
-    await axios
-        .put(update_candidate_URL, current_candidate, {
-            headers: urls.qualtricsHeader(),
-        })
-        .then((response) => {
-            console.log(`SUCCESS`);
-        })
-        .catch((error) => {
-            console.log(`Error when trying to update candidate: "${error}" `);
-        });
-
-    if (!matchedValue) {
-        const currentEmail = {
-            email: candidateContact.email,
-            firstName: candidateContact.firstName,
-            subject: "",
-            body: "",
-            key: config.emailSendWorkflowKey,
-        };
-        await axios.post(urls.invokeInviteNoMatchWorkflow(), currentEmail);
-    }
-}
-
-async function setCollegeGroupToNeedsInvite(
-    collegeGroups,
-    chosenGroupIds,
-) {
-
-    for (let i = 0; i < collegeGroups.length; i++) {
-        if (
-            chosenGroupIds.includes(collegeGroups[i].extRef) &&
-            collegeGroups[i].embeddedData.groupStatus == "Unregistered"
-        ) {
-            let current_college = {
-                embeddedData: {
-                    groupStatus: "NeedsInvite",
-                },
-            };
-            const update_college_URL =
-                urls.updateCollegeGroup() + "/" + collegeGroups[i].contactId;
-            await axios.put(update_college_URL, current_college, {
-                headers: urls.qualtricsHeader(),
-            });
-        }
-    }
-}
-
-async function getCandidateContact(candidateEmail) {
-    let contact: Contact;
-    await axios
-        .get(urls.candidate(), { headers: urls.qualtricsHeader() })
-        .then((response) => {
-            let candidates = response.data.result.elements;
-            for (let candidate in candidates) {
-                if (candidates[candidate].email == candidateEmail) {
-                    contact = {
-                        contactId: candidates[candidate].contactId,
-                        firstName: candidates[candidate].firstName,
-                        email: candidates[candidate].email
-                    }
-                    return contact;
-                }
-            }
-        })
-        .catch((error) => {
-            console.log(`Error while trying to get candidates: "${error}" `);
-        });
-    return contact;
 }

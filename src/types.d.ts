@@ -11,21 +11,31 @@ export type Contact = {
 export type Candidate = Contact & {
     embeddedData?: {
         postcode?: string;
-        college1Id?: string;
-        college1Status?: CandidateCollegeMatchStatus;
-        college1DateSent?: string;
-        college2Id?: string;
-        college2Status?: CandidateCollegeMatchStatus;
-        college2DateSent?: string;
-        college3Id?: string;
-        college3Status?: CandidateCollegeMatchStatus;
-        college3DateSent?: string;
-        college4Id?: string;
-        college4Status?: CandidateCollegeMatchStatus;
-        college4DateSent?: string;
-        college5Id?: string;
-        college5Status?: CandidateCollegeMatchStatus;
-        college5DateSent?: string;
+        collegeGroup1Id?: string;
+        collegeGroup1Status?: CandidateCollegeMatchStatus;
+        collegeGroup1DateSent?: string;
+        collegeGroup1Colleges?: string;
+
+        collegeGroup2Id?: string;
+        collegeGroup2Status?: CandidateCollegeMatchStatus;
+        collegeGroup2DateSent?: string;
+        collegeGroup2Colleges?: string;
+
+        collegeGroup3Id?: string;
+        collegeGroup3Status?: CandidateCollegeMatchStatus;
+        collegeGroup3DateSent?: string;
+        collegeGroup3Colleges?: string;
+
+        collegeGroup4Id?: string;
+        collegeGroup4Status?: CandidateCollegeMatchStatus;
+        collegeGroup4DateSent?: string;
+        collegeGroup4Colleges?: string;
+
+        collegeGroup5Id?: string;
+        collegeGroup5Status?: CandidateCollegeMatchStatus;
+        collegeGroup5DateSent?: string;
+        collegeGroup5Colleges?: string;
+
         lat?: number;
         long?: number;
         region?: string;

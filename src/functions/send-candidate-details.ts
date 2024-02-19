@@ -45,6 +45,14 @@ app.http("send-candidate-details", {
         // Get all the colleges
         const allColleges = await getAllColleges();
 
+        const allCollegesByRef: {} = allColleges.reduce(
+            (prev, college) => {
+                prev[college.extRef] = college;
+                return prev;
+            },
+            {},
+        );
+
         // Get all the candidates
         const allCandidates = await getAllCandidates();
 
@@ -59,22 +67,6 @@ app.http("send-candidate-details", {
             );
 
             try {
-                const groupColleges = allColleges.filter(
-                    (college) =>
-                        college.embeddedData?.groupId == collegeGroup.extRef,
-                );
-                const groupCollegesByRef: {} = groupColleges.reduce(
-                    (prev, college) => {
-                        prev[college.extRef] = college;
-                        return prev;
-                    },
-                    {},
-                );
-
-                context.info(
-                    `Found the following colleges: ${groupColleges.map((college) => `${college.extRef} [${college.firstName}]`).join(", ")}`,
-                );
-
                 let dataForEmail: CollegeGroupWithCandidateData = {
                     collegeGroup,
                     candidates: [],
@@ -85,30 +77,27 @@ app.http("send-candidate-details", {
 
                     for (let collegeNum = 1; collegeNum <= 5; ++collegeNum) {
                         if (
-                            groupCollegesByRef[
-                                candidate.embeddedData[`college${collegeNum}Id`]
-                            ] &&
-                            candidate.embeddedData[
-                                `college${collegeNum}Status`
+                            collegeGroup.extRef == candidate.embeddedData[`collegeGroup${collegeNum}Id`]
+                            && candidate.embeddedData[
+                                `collegeGroup${collegeNum}Status`
                             ] != "Sent"
                         ) {
                             context.info(
                                 `Found a matching candidate: ${candidate.contactId}`,
                             );
 
-                            candidateMatchedColleges.push(
-                                groupCollegesByRef[
-                                    candidate.embeddedData[
-                                        `college${collegeNum}Id`
-                                    ]
-                                ],
-                            );
+                            for(const matchedCollegeRef of candidate.embeddedData[`collegeGroup${collegeNum}Colleges`].split(',')) {
+                                candidateMatchedColleges.push(
+                                    allCollegesByRef[matchedCollegeRef.trim()],
+                                );
+                            }
+                            
                             candidate.embeddedData[
-                                `college${collegeNum}Status`
+                                `collegeGroup${collegeNum}Status`
                             ] = "Sent";
                             
                             candidate.embeddedData[
-                                `college${collegeNum}DateSent`
+                                `collegeGroup${collegeNum}DateSent`
                             ] = currentDate;
                         }
                     }

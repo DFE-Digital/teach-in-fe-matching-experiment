@@ -13,7 +13,7 @@ export const getAllCollegeGroups = async (): Promise<CollegeGroup[]> => {
     );
 };
 
-export const createCollegeGroup = async (collegeGroup: CollegeGroup) => {
+export const createOrUpdateCollegeGroup = async (collegeGroup: CollegeGroup) => {
     await createOrUpdateContactByExtRef(
         config.qualtricsMailingListCollegeGroups,
         collegeGroup,
