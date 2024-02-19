@@ -14,4 +14,6 @@ export default {
     emailSendWorkflowUrl: process.env.EMAIL_SEND_WORKFLOW_URL,
     emailSendWorkflowKey: process.env.EMAIL_SEND_WORKFLOW_KEY,
     candidateSurveyUrl: process.env.CANDIDATE_SURVEY_URL,
+    triggerSendCandidateDetailsUrl:
+        process.env.TRIGGER_SEND_CANDIDATE_DETAILS_URL,
 };

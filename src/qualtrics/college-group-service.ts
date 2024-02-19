@@ -47,8 +47,8 @@ export const formatDate = (date: any, format: string): string => {
     const map = {
         mm: (date.getMonth() + 1).toString().padStart(2, "0"),
         dd: date.getDate().toString().padStart(2, "0"),
-        yyyy: date.getFullYear()
-    }
+        yyyy: date.getFullYear(),
+    };
 
-    return format.replace(/mm|dd|yyyy/gi, matched => map[matched]);
+    return format.replace(/mm|dd|yyyy/gi, (matched) => map[matched]);
 };

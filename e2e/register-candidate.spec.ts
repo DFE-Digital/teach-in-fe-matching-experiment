@@ -14,7 +14,9 @@ import {
   deleteCollegeGroupByExtRef,
   getCollegeGroupByExtRef,
 } from "../src/qualtrics/college-group-service";
-import { deleteInbox, getInbox, getMessageLinks } from "./mailinator";
+import { deleteInbox, getInbox, getMessage, getMessageLinks } from "./mailinator";
+import axios from 'axios';
+import { parseCandidateEmailHtml } from "./email-parser";
 
 const surveyLink = config.candidateSurveyUrl;
 
@@ -59,7 +61,7 @@ const deleteTestColleges = async () => {
 };
 
 test.describe("Register Candidate", () => {
-  test.setTimeout(2 * 60 * 1000); // 2 minutes
+  test.setTimeout(3 * 60 * 1000); // 3 minutes
 
   const mailboxesToDelete: string[] = [];
 
@@ -165,6 +167,7 @@ test.describe("Register Candidate", () => {
         retries: 12,
         delay: 10000,
         until: (contact) => contact?.embeddedData?.college1Id != null,
+
       },
     );
 
@@ -210,21 +213,21 @@ test.describe("Register Candidate", () => {
 
     console.log("🚀🚀🚀 Waiting for college invite email 🚀🚀🚀");
 
-    const collegeGroupInbox = getTestReference(collegeGroup.extRef!);
-    mailboxesToDelete.push(collegeGroupInbox);
+    const initialCollegeGroupInbox = getTestReference(collegeGroup.extRef!);
+    mailboxesToDelete.push(initialCollegeGroupInbox);
 
-    console.log("  Inbox is ", collegeGroupInbox);
+    console.log("  Inbox is ", initialCollegeGroupInbox);
 
     let collegeSurveyLink: any;
 
     await retry(
       async () => {
-        const inbox = await getInbox(collegeGroupInbox);
+        const inbox = await getInbox(initialCollegeGroupInbox);
 
         for (const message of inbox!.msgs) {
           console.log("  Found an email: ", message.id);
 
-          const links = await getMessageLinks(collegeGroupInbox, message.id);
+          const links = await getMessageLinks(initialCollegeGroupInbox, message.id);
 
           collegeSurveyLink = links!.links.find((link) =>
             link.includes("jfe/form"),
@@ -242,7 +245,7 @@ test.describe("Register Candidate", () => {
     expect(collegeSurveyLink).toBeTruthy();
 
     console.log("🚀🚀🚀 Filling in the college registration form 🚀🚀🚀");
-    const newGroupEmail = getTestEmail("joe-bloggs");
+    const newGroupEmail = getTestEmail(getTestReference("joe-bloggs"));
 
     await page.goto(collegeSurveyLink);
 
@@ -283,6 +286,54 @@ test.describe("Register Candidate", () => {
     expect(collegeGroup.embeddedData?.jobTitle).toEqual("Automated tester");
     expect(collegeGroup.embeddedData?.groupStatus).toEqual("Active");
 
+    console.log(
+      "🚀🚀🚀 Triggering sending the candidate email to colleges 🚀🚀🚀",
+    );
 
+    await axios.post(config.triggerSendCandidateDetailsUrl!);
+
+    console.log(
+      "🚀🚀🚀 Waiting for the email 🚀🚀🚀",
+    );
+
+    const updatedCollegeGroupInbox = getTestReference("joe-bloggs");
+    mailboxesToDelete.push(updatedCollegeGroupInbox);
+
+    let messageHtml: string;
+
+    await retry(
+      async () => {
+        const inbox = await getInbox(getTestReference("joe-bloggs"));
+
+        for (const message of inbox!.msgs) {
+          console.log("  Found an email: ", message.id);
+
+          if (message.subject.includes('Potential teachers for your college')) {
+            console.log("  Found potential teacher email");
+            const messageDetail = await getMessage(updatedCollegeGroupInbox, message.id);
+
+            console.log("  Extracting HTML part");
+            const htmlpart = messageDetail.parts.filter(part => part.headers['content-type'].includes('text/html'))[0];
+
+            messageHtml = htmlpart.body;
+            break;
+          }
+        }
+      },
+      { retries: 12, delay: 10000, until: () => messageHtml != undefined },
+    );
+
+    const parsedEmail = parseCandidateEmailHtml(messageHtml);
+
+    expect(parsedEmail).toHaveLength(1);
+    expect(parsedEmail[0].subject).toEqual(candidateSubject1);
+    expect(parsedEmail[0].name).toEqual(`${candidateFirstName} ${candidateLastName}`);
+    expect(parsedEmail[0].email).toEqual(`<a href="mailto:${candidateEmail}">${candidateEmail}</a>`);
+    expect(parsedEmail[0].colleges).toEqual([collegeRecords.colleges[0].firstName]);
+    expect(parsedEmail[0].subject2).toEqual(candidateSubject2Other);
+    expect(parsedEmail[0].qualification).toEqual(candidateQualification);
+    expect(parsedEmail[0].experience).toEqual(candidateExperience);
+    expect(parsedEmail[0].availability).toEqual(candidateAvailability);
   });
 });
+

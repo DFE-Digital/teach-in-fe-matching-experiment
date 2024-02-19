@@ -47,12 +47,12 @@ export type College = Contact & {
 };
 
 export type CollegeGroup = Contact & {
-    unsubscribed?: string,
+    unsubscribed?: string;
     embeddedData?: {
         groupName?: string;
         jobTitle?: string;
         dateInvited?: string;
-        invitationAttempt?: string
+        invitationAttempt?: string;
         groupStatus?: "Unregistered" | "NeedsInvite" | "Invited" | "Active";
     };
 };
