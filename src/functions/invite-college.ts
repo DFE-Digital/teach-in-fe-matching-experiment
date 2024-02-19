@@ -22,6 +22,9 @@ app.http("invite-college", {
             const currentEmail = {
                 email: activeCollegeGroups[x].email,
                 groupName: activeCollegeGroups[x].embeddedData.groupName,
+                contactId: activeCollegeGroups[x].contactId,
+                firstName: activeCollegeGroups[x].firstName,
+                lastName: activeCollegeGroups[x].lastName,
                 subject: "",
                 body: "",
                 key: config.emailSendWorkflowKey,
@@ -30,7 +33,7 @@ app.http("invite-college", {
             await axios.post(urls.invokeInviteCollegeWorkflow(), currentEmail);
 
             let attempt = 1;
-            setCollegeToInvitd(activeCollegeGroups[x].contactId, attempt, formatDate(currentDate, 'yyyy-mm-dd'));
+            setCollegeToInvited(activeCollegeGroups[x].contactId, attempt, formatDate(currentDate, 'yyyy-mm-dd'));
         }
         return {
             body: JSON.stringify({
@@ -41,7 +44,7 @@ app.http("invite-college", {
 
 });
 
-async function setCollegeToInvitd(
+async function setCollegeToInvited(
     contactId: string, 
     attempt: number, 
     currentFormattedDate: string) {

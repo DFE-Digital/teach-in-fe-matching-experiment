@@ -23,6 +23,9 @@ app.http("send-reminder-invite", {
         for (let x = 0; x < activeCollegeGroups.length; x++) {
             const currentEmail = {
                 email: activeCollegeGroups[x].email,
+                contactId: activeCollegeGroups[x].contactId,
+                firstName: activeCollegeGroups[x].firstName,
+                lastName: activeCollegeGroups[x].lastName,
                 subject: "",
                 body: "",
                 key: config.emailSendWorkflowKey,
