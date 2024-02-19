@@ -1,7 +1,7 @@
 import 'dotenv/config'
 
 import config from "./src/config";
-import { createCollegeGroup, getCollegeGroupByExtRef } from "./src/qualtrics/college-group-service";
+import { createOrUpdateCollegeGroup, getCollegeGroupByExtRef } from "./src/qualtrics/college-group-service";
 import { createCollege, getCollegeByExtRef } from "./src/qualtrics/college-service";
 import { College } from "./src/types";
 
@@ -143,7 +143,7 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
 
         if(write) {
             console.log(`Writing college group ${qualtricsCollegeGroup.extRef} - ${qualtricsCollegeGroup.embeddedData.groupName}`);
-            createCollegeGroup(qualtricsCollegeGroup);
+            createOrUpdateCollegeGroup(qualtricsCollegeGroup);
         } else {
             console.log("Creating/updating college group", qualtricsCollegeGroup);
         }
