@@ -1,6 +1,6 @@
 import "dotenv/config";
 import config from "../config";
-import { CollegeGroup } from "../types";
+import { Candidate, CollegeGroup, Contact } from "../types";
 import {
     getAllCollegeGroups,
     updateCollegeGroupById,
@@ -20,10 +20,12 @@ app.http("register-candidate", {
         const requestData: any = await request.json();
 
         const orderedReachableColleges = typeof(requestData.nearestColleges) == 'string' ? JSON.parse(requestData.nearestColleges) : requestData.nearestColleges;
-        const candidateLat = requestData.lat; //51.496351
-        const candidateLong = requestData.long; // -0.087925
+        const candidateLat = requestData.lat;
+        const candidateLong = requestData.long;
         const candidateRegion = requestData.region;
-        const candidate = await getCandidateByEmail(requestData.email);
+        const candidate: Candidate = await getCandidateContact(
+            requestData.email,
+        );
 
         // load all subscribed college-groups data from qualtrics to local list
         const collegeGroups = (await getAllCollegeGroups()).filter(
@@ -97,3 +99,27 @@ app.http("register-candidate", {
         return { body: JSON.stringify(orderedReachableColleges) };
     },
 });
+
+async function getCandidateContact(candidateEmail) {
+    let contact: Candidate;
+    await axios
+        .get(urls.candidate(), { headers: urls.qualtricsHeader() })
+        .then((response) => {
+            let candidates = response.data.result.elements;
+            for (let candidate in candidates) {
+                if (candidates[candidate].email == candidateEmail) {
+                    contact = {
+                        contactId: candidates[candidate].contactId,
+                        firstName: candidates[candidate].firstName,
+                        email: candidates[candidate].email,
+                        embeddedData: {},
+                    }
+                    return contact;
+                }
+            }
+        })
+        .catch((error) => {
+            console.log(`Error while trying to get candidates: "${error}" `);
+        });
+    return contact;
+}
