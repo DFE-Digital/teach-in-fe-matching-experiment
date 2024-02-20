@@ -19,7 +19,7 @@ app.http("register-candidate", {
     handler: async (request, console) => {
         const requestData: any = await request.json();
 
-        const orderedReachableColleges = requestData.nearestColleges;
+        const orderedReachableColleges = typeof(requestData.nearestColleges) == 'string' ? JSON.parse(requestData.nearestColleges) : requestData.nearestColleges;
         const candidateLat = requestData.lat; //51.496351
         const candidateLong = requestData.long; // -0.087925
         const candidateRegion = requestData.region;
