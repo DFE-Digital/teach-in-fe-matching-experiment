@@ -5,6 +5,7 @@ import {
     deleteContactById,
     getAllMailingListContacts,
     getMailingListContactByExtRef,
+    updateContactById,
 } from "./qualtrics-service";
 
 export const getAllCollegeGroups = async (): Promise<CollegeGroup[]> => {
@@ -13,11 +14,20 @@ export const getAllCollegeGroups = async (): Promise<CollegeGroup[]> => {
     );
 };
 
-export const createOrUpdateCollegeGroup = async (collegeGroup: CollegeGroup) => {
+export const createOrUpdateCollegeGroup = async (
+    collegeGroup: CollegeGroup,
+) => {
     await createOrUpdateContactByExtRef(
         config.qualtricsMailingListCollegeGroups,
         collegeGroup,
     );
+};
+
+export const updateCollegeGroupById = async (
+    id: string,
+    collegeGroup: CollegeGroup,
+) => {
+    await updateContactById(id, collegeGroup);
 };
 
 export const deleteCollegeGroupByExtRef = async (extRef: string) => {

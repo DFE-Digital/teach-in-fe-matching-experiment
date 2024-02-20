@@ -4,7 +4,10 @@ import {
     getAllCandidates,
     updateCandidate,
 } from "../qualtrics/candidate-service";
-import { getAllCollegeGroups, formatDate } from "../qualtrics/college-group-service";
+import {
+    getAllCollegeGroups,
+    formatDate,
+} from "../qualtrics/college-group-service";
 import { getAllColleges } from "../qualtrics/college-service";
 import { Candidate, College, CollegeGroup } from "../types";
 import { encode } from "html-entities";
@@ -40,18 +43,15 @@ app.http("send-candidate-details", {
             );
         }
 
-        const currentDate = formatDate(new Date(Date.now()), 'yyyy-mm-dd');
+        const currentDate = formatDate(new Date(Date.now()), "yyyy-mm-dd");
 
         // Get all the colleges
         const allColleges = await getAllColleges();
 
-        const allCollegesByRef: {} = allColleges.reduce(
-            (prev, college) => {
-                prev[college.extRef] = college;
-                return prev;
-            },
-            {},
-        );
+        const allCollegesByRef: {} = allColleges.reduce((prev, college) => {
+            prev[college.extRef] = college;
+            return prev;
+        }, {});
 
         // Get all the candidates
         const allCandidates = await getAllCandidates();
@@ -59,7 +59,7 @@ app.http("send-candidate-details", {
         const stats = {
             numEmails: 0,
             numCandidates: 0,
-        }
+        };
 
         for (const collegeGroup of activeCollegeGroups) {
             context.info(
@@ -77,8 +77,11 @@ app.http("send-candidate-details", {
 
                     for (let collegeNum = 1; collegeNum <= 5; ++collegeNum) {
                         if (
-                            collegeGroup.extRef == candidate.embeddedData[`collegeGroup${collegeNum}Id`]
-                            && candidate.embeddedData[
+                            collegeGroup.extRef ==
+                                candidate.embeddedData[
+                                    `collegeGroup${collegeNum}Id`
+                                ] &&
+                            candidate.embeddedData[
                                 `collegeGroup${collegeNum}Status`
                             ] != "Sent"
                         ) {
@@ -86,16 +89,18 @@ app.http("send-candidate-details", {
                                 `Found a matching candidate: ${candidate.contactId}`,
                             );
 
-                            for(const matchedCollegeRef of candidate.embeddedData[`collegeGroup${collegeNum}Colleges`].split(',')) {
+                            for (const matchedCollegeRef of candidate.embeddedData[
+                                `collegeGroup${collegeNum}Colleges`
+                            ].split(",")) {
                                 candidateMatchedColleges.push(
                                     allCollegesByRef[matchedCollegeRef.trim()],
                                 );
                             }
-                            
+
                             candidate.embeddedData[
                                 `collegeGroup${collegeNum}Status`
                             ] = "Sent";
-                            
+
                             candidate.embeddedData[
                                 `collegeGroup${collegeNum}DateSent`
                             ] = currentDate;
@@ -153,7 +158,7 @@ app.http("send-candidate-details", {
         return {
             body: JSON.stringify({
                 result: "success",
-                stats
+                stats,
             }),
         };
     },
