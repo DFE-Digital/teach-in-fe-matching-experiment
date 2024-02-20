@@ -1,9 +1,7 @@
 import "dotenv/config";
 import config from "../config";
-import { getAllColleges } from "../qualtrics/college-service";
 import { CollegeGroup } from "../types";
 import {
-    createOrUpdateCollegeGroup,
     getAllCollegeGroups,
     updateCollegeGroupById,
 } from "../qualtrics/college-group-service";
@@ -15,15 +13,13 @@ import { app } from "@azure/functions";
 import axios from "axios";
 import urls from "./urls";
 
-const radiusMiles = 40;
-const radiusKm = radiusMiles * 1.609;
-
 app.http("register-candidate", {
     methods: ["POST"],
     authLevel: "function",
     handler: async (request, console) => {
         const requestData: any = await request.json();
 
+        const orderedReachableColleges = requestData.nearestColleges;
         const candidateLat = requestData.lat; //51.496351
         const candidateLong = requestData.long; // -0.087925
         const candidateRegion = requestData.region;
@@ -37,17 +33,6 @@ app.http("register-candidate", {
         collegeGroups.forEach(
             (collegeGroup) =>
                 (collegeGroupsByExtRef[collegeGroup.extRef] = collegeGroup),
-        );
-
-        // get the closest colloges to the candidate by using their lat/long
-        const reachableColleges = await getClosestColleges(
-            candidateLat,
-            candidateLong,
-        );
-
-        // sort colleges by distance
-        const orderedReachableColleges = reachableColleges.sort(
-            (a, b) => a.distance - b.distance,
         );
 
         const matches = [];
@@ -112,42 +97,3 @@ app.http("register-candidate", {
         return { body: JSON.stringify(orderedReachableColleges) };
     },
 });
-
-async function getClosestColleges(candidateLat, candidateLong) {
-    const closestColleges: any[] = [];
-
-    const allColleges = await getAllColleges();
-
-    for (const college of allColleges) {
-        const collegeLat = college.embeddedData!.lat!;
-        const collegeLong = college.embeddedData!.long!;
-        const extRef = college.extRef;
-        const collegeGroupId = college.embeddedData?.groupId;
-
-        const R = 6371; // Radius of the earth in km
-        const dLat = deg2rad(collegeLat - candidateLat); // deg2rad below
-        const dLon = deg2rad(collegeLong - candidateLong);
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(deg2rad(candidateLat)) *
-                Math.cos(deg2rad(collegeLat)) *
-                Math.sin(dLon / 2) *
-                Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = R * c;
-        if (d < radiusKm) {
-            const currentDistance = {
-                collegeId: extRef,
-                distance: d,
-                collegeGroupId: collegeGroupId,
-            };
-            closestColleges.push(currentDistance);
-        }
-    }
-
-    return closestColleges;
-}
-
-function deg2rad(deg) {
-    return deg * (Math.PI / 180);
-}
