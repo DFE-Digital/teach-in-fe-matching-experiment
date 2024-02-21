@@ -6,6 +6,7 @@ import {
     updateCollegeGroupById,
 } from "../qualtrics/college-group-service";
 import {
+    getAllCandidates,
     getCandidateByEmail,
     updateCandidate,
 } from "../qualtrics/candidate-service";
@@ -16,21 +17,35 @@ import urls from "./urls";
 app.http("register-candidate", {
     methods: ["POST"],
     authLevel: "function",
-    handler: async (request, console) => {
+    handler: async (request, context) => {
         const requestData: any = await request.json();
 
-        const orderedReachableColleges = typeof(requestData.nearestColleges) == 'string' ? JSON.parse(requestData.nearestColleges) : requestData.nearestColleges;
+        const orderedReachableColleges =
+            typeof requestData.nearestColleges == "string"
+                ? JSON.parse(requestData.nearestColleges)
+                : requestData.nearestColleges;
         const candidateLat = requestData.lat;
         const candidateLong = requestData.long;
         const candidateRegion = requestData.region;
-        const candidate: Candidate = await getCandidateContact(
-            requestData.email,
+        const candidate: Candidate = (await getAllCandidates()).find(
+            (candidate) => candidate.email == requestData.email,
         );
+
+        if (!candidate) {
+            context.error("Register request received for missing candidate");
+            return {
+                status: 400,
+                body: JSON.stringify({
+                    error: "Candidate not found",
+                }),
+            };
+        }
 
         // load all subscribed college-groups data from qualtrics to local list
         const collegeGroups = (await getAllCollegeGroups()).filter(
             (collegeGroup) => !collegeGroup.unsubscribed,
         );
+
         const collegeGroupsByExtRef: { [key: string]: CollegeGroup } = {};
         collegeGroups.forEach(
             (collegeGroup) =>
@@ -60,14 +75,21 @@ app.http("register-candidate", {
         candidate.embeddedData.long = candidateLong;
         candidate.embeddedData.region = candidateRegion;
 
-        for (let i = 0; i < Math.min(matches.length, 5); ++i) {
-            candidate.embeddedData[`collegeGroup${i + 1}Id`] =
-                matches[i].collegeGroupId;
-            candidate.embeddedData[`collegeGroup${i + 1}Colleges`] =
-                matches[i].colleges.join(",");
+        let i = 1;
+        for (const match of matches) {
+            candidate.embeddedData[`collegeGroup${i}Id`] = match.collegeGroupId;
+            candidate.embeddedData[`collegeGroup${i}Colleges`] =
+                match.colleges.join(",");
 
-            const collegeGroup =
-                collegeGroupsByExtRef[matches[i].collegeGroupId];
+            const collegeGroup = collegeGroupsByExtRef[match.collegeGroupId];
+
+            if (!collegeGroup) {
+                context.error(
+                    "No record for matched college group %s - skipping",
+                    match.collegeGroupId,
+                );
+                continue;
+            }
 
             if (collegeGroup.embeddedData.groupStatus == "Unregistered") {
                 const updatedCollegeGroup: CollegeGroup = {
@@ -80,6 +102,12 @@ app.http("register-candidate", {
                     collegeGroup.contactId,
                     updatedCollegeGroup,
                 );
+            }
+
+            ++i;
+
+            if (i > 5) {
+                break;
             }
         }
 
@@ -99,27 +127,3 @@ app.http("register-candidate", {
         return { body: JSON.stringify(orderedReachableColleges) };
     },
 });
-
-async function getCandidateContact(candidateEmail) {
-    let contact: Candidate;
-    await axios
-        .get(urls.candidate(), { headers: urls.qualtricsHeader() })
-        .then((response) => {
-            let candidates = response.data.result.elements;
-            for (let candidate in candidates) {
-                if (candidates[candidate].email == candidateEmail) {
-                    contact = {
-                        contactId: candidates[candidate].contactId,
-                        firstName: candidates[candidate].firstName,
-                        email: candidates[candidate].email,
-                        embeddedData: {},
-                    }
-                    return contact;
-                }
-            }
-        })
-        .catch((error) => {
-            console.log(`Error while trying to get candidates: "${error}" `);
-        });
-    return contact;
-}

@@ -16,7 +16,7 @@
     "e2e": "playwright test",
     "lint": "eslint --ext .js,.ts",
     "lint-fix": "eslint --ext .js,.ts --fix",
-    "format": "prettier --ignore-path .gitignore --write \"src/**/*.+(js|ts|json)\"",
+    "format": "prettier --ignore-path .gitignore --write \"src/**/*.+(js|ts|json)\" \"e2e/**/*.+(js|ts|json)\" \"tests-fixtures/**/*.+(js|ts|json)\"",
     "update-colleges": "tsx update-colleges.ts"
   },
   "repository": {

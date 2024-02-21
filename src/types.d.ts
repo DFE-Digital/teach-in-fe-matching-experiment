@@ -56,6 +56,12 @@ export type College = Contact & {
     };
 };
 
+export type CollegeGroupStatus =
+    | "Unregistered"
+    | "NeedsInvite"
+    | "Invited"
+    | "Active";
+
 export type CollegeGroup = Contact & {
     unsubscribed?: string;
     embeddedData?: {
@@ -63,6 +69,6 @@ export type CollegeGroup = Contact & {
         jobTitle?: string;
         dateInvited?: string;
         invitationAttempt?: string;
-        groupStatus?: "Unregistered" | "NeedsInvite" | "Invited" | "Active";
+        groupStatus?: CollegeGroupStatus;
     };
 };
