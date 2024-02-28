@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import { deleteContactById } from "../src/qualtrics/qualtrics-service";
 import { retry } from "ts-retry-promise";
 import config from "../src/config";
@@ -14,11 +14,21 @@ import {
   deleteCollegeGroupByExtRef,
   getCollegeGroupByExtRef,
 } from "../src/qualtrics/college-group-service";
-import { deleteInbox, getInbox, getMessage, getMessageLinks } from "./mailinator";
-import axios from 'axios';
-import { parseCandidateEmailHtml } from "./email-parser";
-
-const surveyLink = config.candidateSurveyUrl;
+import {
+  deleteInbox,
+  deleteMessage,
+  getInbox,
+  getMessage,
+  getMessageLinks,
+} from "./mailinator";
+import axios from "axios";
+import { parseCandidateEmailHtml } from "./support/email-parser";
+import { CollegeGroup, CollegeGroupStatus } from "../src/types";
+import {
+  CandidateFormDetails,
+  fillInCandidateForm,
+} from "./support/candidate-form";
+import { CollegeFormDetails, fillInCollegeForm } from "./support/college-form";
 
 const hash = new Date().getTime();
 
@@ -28,49 +38,60 @@ const getTestReference = (reference: string): string =>
 const getTestEmail = (reference: string): string =>
   `${reference}@${config.mailinatorDomain}`;
 
-const candidateEmail = getTestEmail(getTestReference("candidate"));
-
-const collegeRecords = testColleges.test2;
+const collegeRecords = testColleges.lapland;
 
 for (const groupRecord of collegeRecords.groups) {
   groupRecord.email = getTestEmail(getTestReference(groupRecord.extRef));
 }
 
-const createTestColleges = async () => {
-  console.log("🚀🚀🚀 Creating test colleges and groups 🚀🚀🚀");
-  for (const record of collegeRecords.colleges) {
-    console.log("Creating college", record.firstName);
-    await createCollege(record);
-  }
-
-  for (const record of collegeRecords.groups) {
-    console.log("Creating college group", record.embeddedData.groupName);
-    await createOrUpdateCollegeGroup(record);
-  }
-};
-
-const deleteTestColleges = async () => {
-  console.log("🚀🚀🚀 Deleting test colleges and groups 🚀🚀🚀");
-  for (const record of collegeRecords.colleges) {
-    await deleteCollegeByExtRef(record.extRef);
-  }
-
-  for (const record of collegeRecords.groups) {
-    await deleteCollegeGroupByExtRef(record.extRef);
-  }
-};
+test.describe("No matching colleges", () => {
+  test.setTimeout(5 * 60 * 1000); // 3 minutes
+});
 
 test.describe("Register Candidate", () => {
-  test.setTimeout(3 * 60 * 1000); // 3 minutes
+  test.setTimeout(5 * 60 * 1000); // 3 minutes
 
   const mailboxesToDelete: string[] = [];
+  const candidatessToDelete: string[] = [];
 
-  const cleanup = async () => {
-    console.log("🚀🚀🚀 Deleting test candidate 🚀🚀🚀");
-    const candidate = await getCandidateByEmail(candidateEmail);
+  const createTestColleges = async () => {
+    console.log("🚀🚀🚀 Creating test colleges and groups 🚀🚀🚀");
+    for (const record of collegeRecords.colleges) {
+      console.log("Creating college", record.firstName);
+      await createCollege(record);
+    }
 
-    if (candidate) {
-      await deleteContactById(candidate.contactId!);
+    for (const record of collegeRecords.groups) {
+      console.log("Creating college group", record.embeddedData.groupName);
+      await createOrUpdateCollegeGroup(record);
+    }
+  };
+
+  const deleteTestColleges = async () => {
+    console.log("🚀🚀🚀 Deleting test colleges and groups 🚀🚀🚀");
+    for (const record of collegeRecords.colleges) {
+      await deleteCollegeByExtRef(record.extRef);
+    }
+
+    for (const record of collegeRecords.groups) {
+      await deleteCollegeGroupByExtRef(record.extRef);
+    }
+  };
+
+  const deleteTestCandidates = async () => {
+    console.log("🚀🚀🚀 Deleting test candidates 🚀🚀🚀");
+    for (const email of candidatessToDelete) {
+      const candidate = await getCandidateByEmail(email);
+
+      if (candidate) {
+        await deleteContactById(candidate.contactId!);
+      }
+    }
+  };
+
+  const deleteTestMaiboxes = async () => {
+    for (const mailbox of mailboxesToDelete) {
+      await deleteInbox(mailbox);
     }
   };
 
@@ -82,202 +103,82 @@ test.describe("Register Candidate", () => {
 
   test.afterAll(async () => {
     console.log("🚀🚀🚀 Deleting test data 🚀🚀🚀");
-    await cleanup();
+    await deleteTestCandidates();
     await deleteTestColleges();
-
-    for (const mailbox of mailboxesToDelete) {
-      console.log("Deleting mailbox ", mailbox);
-      deleteInbox(mailbox);
-    }
+    await deleteTestMaiboxes();
   });
 
-  test("Registering a new candidate", async ({ page }) => {
-    const candidateFirstName = "Test";
-    const candidateLastName = "Candidate";
-    const candidatePostCode = testPostcodes.test2.postcode;
-    const candidateSubject1 = 'construction';
-    const candidateSubject2 = 'Other: write your subject in the box below';
-    const candidateSubject2Other = 'Automated testing';
-    const candidateQualification = 'Level 4'
-    const candidateExperience = '11 to 20 years';
-    const candidateAvailability = 'Full time';
+  test("Registering a new candidate", async ({ page, browser }) => {
+    const testCandidate: CandidateFormDetails = {
+      firstName: "Test",
+      lastName: "Candidate",
+      postcode: testPostcodes.matches.postcode,
+      subject1: "construction",
+      subject2: "Other: write your subject in the box below",
+      subject2Other: "Automated testing",
+      qualification: "Level 4",
+      experience: "11 to 20 years",
+      availability: "Full time",
+      email: getTestEmail(getTestReference("candidate1")),
+    };
 
-    await page.goto(surveyLink);
+    const contact = await fillInCandidateForm(browser, testCandidate);
+    candidatessToDelete.push(testCandidate.email);
 
-    console.log("🚀🚀🚀 Filling in the candidate registration 🚀🚀🚀");
-
-    console.log("Intro page");
-    await page.locator("#NextButton").click();
-
-    console.log("'Are you aged 18 or over?' page");
-    await page.getByText("Yes").click();
-    await page.locator("#NextButton").click();
-
-    console.log("'Where do you currently live?' page")
-    await page.getByText("England").click();
-    await page.locator("#NextButton").click();
-
-    console.log("'What is your postcode?' page")
-    await page.getByLabel("What is your postcode?").fill(candidatePostCode);
-    await page.locator("#NextButton").click();
-
-    console.log("'What subject are you interested in teaching?' page")
-    await page.getByText(candidateSubject1).click();
-    await page.locator("#NextButton").click();
-
-    console.log("'Which construction subject are you interested in teaching? ' page")
-    await page.getByText(candidateSubject2).click();
-    await page.getByRole('textbox').fill(candidateSubject2Other);
-    await page.locator("#NextButton").click();
-
-    console.log("'What is your highest qualification in that subject?' page")
-    await page.getByText(candidateQualification).click();
-    await page.locator("#NextButton").click();
-
-    console.log("'How much industry experience do you have in the subject you want to teach?' page")
-    await page.getByText(candidateExperience).click();
-    await page.locator("#NextButton").click();
-
-    console.log("'How much time would you want to spend teaching?' page")
-    await page.getByText(candidateAvailability).click();
-    await page.locator("#NextButton").click();
-
-    console.log("'Share your contact details' page")
-    await page.getByLabel("First name").fill(candidateFirstName);
-    await page.getByLabel("Last name").fill(candidateLastName);
-    await page.getByLabel("Email address").fill(candidateEmail);
-    await page.locator("#NextButton").click();
-
-    console.log("Consent page");
-    await page.locator("#NextButton").click();
-
-    // console.log("CAPTCHA page");
-    // await page.locator("#NextButton").click();
-
-    console.log("Form submitted");
-
-    await page
-      .getByText("Thank you for taking part")
-      .waitFor({ timeout: 5000 });
-
-    console.log("🚀🚀🚀 Waiting for the contact details to be updated 🚀🚀🚀");
-    let contact = await retry(
-      async () => await getCandidateByEmail(candidateEmail),
-      {
-        retries: 12,
-        delay: 10000,
-        until: (contact) => contact?.embeddedData?.collegeGroup1Id != null,
-
-      },
+    expect(contact.firstName).toEqual(testCandidate.firstName);
+    expect(contact.lastName).toEqual(testCandidate.lastName);
+    expect(contact.email).toEqual(testCandidate.email);
+    expect(contact.embeddedData?.postcode).toEqual(testCandidate.postcode);
+    expect(contact.embeddedData?.subject).toContain(testCandidate.subject1);
+    expect(contact.embeddedData?.subSubject).toContain(
+      testCandidate.subject2Other,
+    );
+    expect(contact.embeddedData?.qualification).toContain(
+      testCandidate.qualification,
+    );
+    expect(contact.embeddedData?.experience).toContain(
+      testCandidate.experience,
+    );
+    expect(contact.embeddedData?.availability).toContain(
+      testCandidate.availability,
+    );
+    expect(contact.embeddedData?.collegeGroup1Id).toEqual(
+      collegeRecords.groups[0].extRef,
+    );
+    expect(contact.embeddedData?.collegeGroup1Colleges).toEqual(
+      collegeRecords.colleges[0].extRef,
     );
 
-    expect(contact.firstName).toEqual(candidateFirstName);
-    expect(contact.lastName).toEqual(candidateLastName);
-    expect(contact.email).toEqual(candidateEmail);
-    expect(contact.embeddedData?.postcode).toEqual(candidatePostCode);
-    expect(contact.embeddedData?.subject).toContain(candidateSubject1);
-    expect(contact.embeddedData?.subSubject).toContain(candidateSubject2Other);
-    expect(contact.embeddedData?.qualification).toContain(candidateQualification);
-    expect(contact.embeddedData?.experience).toContain(candidateExperience);
-    expect(contact.embeddedData?.availability).toContain(candidateAvailability);
-
-    console.log(
-      "🚀🚀🚀 Waiting for the college to be stored against the contact 🚀🚀🚀",
+    let collegeGroup = await waitForCollegeGroupStatus(
+      collegeRecords.groups[0].extRef,
+      "Invited",
     );
-    contact = await retry(
-      async () => await getCandidateByEmail(candidateEmail),
-      {
-        retries: 12,
-        delay: 10000,
-        until: (contact) => contact?.embeddedData?.collegeGroup1Id != null,
-      },
-    );
-
-    expect(contact.embeddedData!.collegeGroup1Id).toEqual(
-      collegeRecords.groups![0].extRef,
-    );
-
-    console.log("🚀🚀🚀 Waiting for the college to be updated 🚀🚀🚀");
-    let collegeGroup = await retry(
-      async () =>
-        await getCollegeGroupByExtRef(collegeRecords.groups![0].extRef!),
-      {
-        retries: 12,
-        delay: 10000,
-        until: (collegeGroup) =>
-          collegeGroup.embeddedData!.groupStatus == "Invited",
-      },
-    );
-
-    expect(collegeGroup.embeddedData!.groupStatus).toEqual("Invited");
 
     console.log("🚀🚀🚀 Waiting for college invite email 🚀🚀🚀");
 
     const initialCollegeGroupInbox = getTestReference(collegeGroup.extRef!);
     mailboxesToDelete.push(initialCollegeGroupInbox);
 
-    console.log("  Inbox is ", initialCollegeGroupInbox);
-
-    let collegeSurveyLink: any;
-
-    await retry(
-      async () => {
-        const inbox = await getInbox(initialCollegeGroupInbox);
-
-        for (const message of inbox!.msgs) {
-          console.log("  Found an email: ", message.id);
-
-          const links = await getMessageLinks(initialCollegeGroupInbox, message.id);
-
-          collegeSurveyLink = links!.links.find((link) =>
-            link.includes("jfe/form"),
-          );
-
-          if (collegeSurveyLink) {
-            console.log("  Found survey link", collegeSurveyLink);
-            break;
-          }
-        }
-      },
-      { retries: 12, delay: 10000, until: () => collegeSurveyLink },
+    const collegeSurveyLink = await getCollegeGroupInviteLinkAndDeleteEmail(
+      initialCollegeGroupInbox,
     );
-
-    expect(collegeSurveyLink).toBeTruthy();
 
     console.log("🚀🚀🚀 Filling in the college registration form 🚀🚀🚀");
     const newGroupEmail = getTestEmail(getTestReference("joe-bloggs"));
+    mailboxesToDelete.push(getTestReference("joe-bloggs"));
 
-    await page.goto(collegeSurveyLink);
+    const testCollegeUserDetails: CollegeFormDetails = {
+      firstName: "Joe",
+      lastName: "Bloggs",
+      jobTitle: "Automated tester",
+      email: newGroupEmail,
+    };
 
-    // Intro page
-    await page.locator("#NextButton").click();
+    await fillInCollegeForm(browser, collegeSurveyLink, testCollegeUserDetails);
 
-    // College details page
-    await page.getByLabel("First name").fill("Joe");
-    await page.getByLabel("Last name").fill("Bloggs");
-    await page.getByLabel("Your job title").fill("Automated tester");
-    await page.getByLabel("Your work email").fill(newGroupEmail);
-
-    await page.locator("#NextButton").click();
-
-    // Terms of the trial page
-    await page.locator("#NextButton").click();
-
-    await page.getByText("Thank you for taking part").waitFor({ timeout: 5000 });
-
-    console.log(
-      "🚀🚀🚀 Waiting for the college to be updated to 'Active' 🚀🚀🚀",
-    );
-
-    collegeGroup = await retry(
-      async () =>
-        await getCollegeGroupByExtRef(collegeRecords.groups![0].extRef!),
-      {
-        retries: 12,
-        delay: 10000,
-        until: (collegeGroup) =>
-          collegeGroup.embeddedData?.groupStatus == "Active",
-      },
+    collegeGroup = await waitForCollegeGroupStatus(
+      collegeGroup.extRef,
+      "Active",
     );
 
     expect(collegeGroup.firstName).toEqual("Joe");
@@ -292,48 +193,166 @@ test.describe("Register Candidate", () => {
 
     await axios.post(config.triggerSendCandidateDetailsUrl!);
 
-    console.log(
-      "🚀🚀🚀 Waiting for the email 🚀🚀🚀",
-    );
+    console.log("🚀🚀🚀 Waiting for the email 🚀🚀🚀");
 
     const updatedCollegeGroupInbox = getTestReference("joe-bloggs");
     mailboxesToDelete.push(updatedCollegeGroupInbox);
 
-    let messageHtml: string;
-
-    await retry(
-      async () => {
-        const inbox = await getInbox(getTestReference("joe-bloggs"));
-
-        for (const message of inbox!.msgs) {
-          console.log("  Found an email: ", message.id);
-
-          if (message.subject.includes('Potential teachers for your college')) {
-            console.log("  Found potential teacher email");
-            const messageDetail = await getMessage(updatedCollegeGroupInbox, message.id);
-
-            console.log("  Extracting HTML part");
-            const htmlpart = messageDetail.parts.filter(part => part.headers['content-type'].includes('text/html'))[0];
-
-            messageHtml = htmlpart.body;
-            break;
-          }
-        }
-      },
-      { retries: 12, delay: 10000, until: () => messageHtml != undefined },
+    const parsedEmail = await getCandidateEmailSentToCollegeAndDeleteEmail(
+      updatedCollegeGroupInbox,
     );
 
-    const parsedEmail = parseCandidateEmailHtml(messageHtml);
-
     expect(parsedEmail).toHaveLength(1);
-    expect(parsedEmail[0].subject).toEqual(candidateSubject1);
-    expect(parsedEmail[0].name).toEqual(`${candidateFirstName} ${candidateLastName}`);
-    expect(parsedEmail[0].email).toEqual(`<a href="mailto:${candidateEmail}">${candidateEmail}</a>`);
-    expect(parsedEmail[0].colleges).toEqual([collegeRecords.colleges[0].firstName]);
-    expect(parsedEmail[0].subject2).toEqual(candidateSubject2Other);
-    expect(parsedEmail[0].qualification).toEqual(candidateQualification);
-    expect(parsedEmail[0].experience).toEqual(candidateExperience);
-    expect(parsedEmail[0].availability).toEqual(candidateAvailability);
+    expect(parsedEmail[0].subject).toEqual(testCandidate.subject1);
+    expect(parsedEmail[0].name).toEqual(
+      `${testCandidate.firstName} ${testCandidate.lastName}`,
+    );
+    expect(parsedEmail[0].email).toEqual(
+      `<a href="mailto:${testCandidate.email}">${testCandidate.email}</a>`,
+    );
+    expect(parsedEmail[0].colleges).toEqual([
+      collegeRecords.colleges[0].firstName,
+    ]);
+    expect(parsedEmail[0].subject2).toEqual(testCandidate.subject2Other);
+    expect(parsedEmail[0].qualification).toEqual(testCandidate.qualification);
+    expect(parsedEmail[0].experience).toEqual(testCandidate.experience);
+    expect(parsedEmail[0].availability).toEqual(testCandidate.availability);
+
+    console.log("🚀🚀🚀 Registering a second candidate 🚀🚀🚀");
+    const testCandidate2: CandidateFormDetails = {
+      firstName: "Test2",
+      lastName: "Candidate2",
+      postcode: testPostcodes.matches.postcode,
+      subject1: "law",
+      qualification: "Level 3",
+      experience: "11 to 20 years",
+      availability: "Full time",
+      email: getTestEmail(getTestReference("candidate2")),
+    };
+
+    const contact2 = await fillInCandidateForm(browser, testCandidate2);
+    candidatessToDelete.push(testCandidate2.email);
+
+    const parsedEmail2 = await getCandidateEmailSentToCollegeAndDeleteEmail(
+      updatedCollegeGroupInbox,
+    );
+
+    expect(parsedEmail2).toHaveLength(1);
+    expect(parsedEmail2[0].subject).toEqual(testCandidate2.subject1);
+    expect(parsedEmail2[0].name).toEqual(
+      `${testCandidate2.firstName} ${testCandidate2.lastName}`,
+    );
+    expect(parsedEmail2[0].email).toEqual(
+      `<a href="mailto:${testCandidate2.email}">${testCandidate2.email}</a>`,
+    );
+    expect(parsedEmail2[0].colleges).toEqual([
+      collegeRecords.colleges[0].firstName,
+    ]);
+    expect(parsedEmail2[0].subject2).toEqual(testCandidate2.subject2Other);
+    expect(parsedEmail2[0].qualification).toEqual(testCandidate2.qualification);
+    expect(parsedEmail2[0].experience).toEqual(testCandidate2.experience);
+    expect(parsedEmail2[0].availability).toEqual(testCandidate2.availability);
   });
 });
 
+async function waitForCollegeGroupStatus(
+  collegeGroupExtRef: string,
+  status: CollegeGroupStatus,
+): Promise<CollegeGroup> {
+  console.log(
+    `🚀🚀🚀 Waiting for the college ${collegeGroupExtRef} to be updated to ${status} 🚀🚀🚀`,
+  );
+
+  const collegeGroup = await retry(
+    async () => await getCollegeGroupByExtRef(collegeGroupExtRef),
+    {
+      retries: 12,
+      delay: 10000,
+      timeout: 120000,
+      until: (collegeGroup) => collegeGroup.embeddedData!.groupStatus == status,
+    },
+  );
+
+  expect(collegeGroup.embeddedData!.groupStatus).toEqual(status);
+
+  return collegeGroup;
+}
+
+async function getCollegeGroupInviteLinkAndDeleteEmail(
+  collegeGroupInbox: string,
+): Promise<string> {
+  console.log("  Inbox is ", collegeGroupInbox);
+
+  let collegeSurveyLink: any;
+
+  await retry(
+    async () => {
+      const inbox = await getInbox(collegeGroupInbox);
+
+      for (const message of inbox!.msgs) {
+        console.log("  Found an email: ", message.id);
+
+        const links = await getMessageLinks(collegeGroupInbox, message.id);
+
+        collegeSurveyLink = links!.links.find((link) =>
+          link.includes("jfe/form"),
+        );
+
+        if (collegeSurveyLink) {
+          console.log("  Found survey link", collegeSurveyLink);
+          deleteMessage(collegeGroupInbox, message.id);
+          break;
+        }
+      }
+    },
+    {
+      retries: 12,
+      delay: 10000,
+      timeout: 120000,
+      until: () => collegeSurveyLink,
+    },
+  );
+
+  expect(collegeSurveyLink).toBeTruthy();
+
+  return collegeSurveyLink;
+}
+
+async function getCandidateEmailSentToCollegeAndDeleteEmail(
+  collegeGroupInbox: string,
+) {
+  let messageHtml: string;
+
+  await retry(
+    async () => {
+      const inbox = await getInbox(collegeGroupInbox);
+
+      for (const message of inbox!.msgs) {
+        console.log("  Found an email: ", message.id);
+
+        if (message.subject.includes("Potential teachers for your college")) {
+          console.log("  Found potential teacher email");
+          const messageDetail = await getMessage(collegeGroupInbox, message.id);
+
+          console.log("  Extracting HTML part");
+          const htmlpart = messageDetail.parts.filter((part) =>
+            part.headers["content-type"].includes("text/html"),
+          )[0];
+
+          messageHtml = htmlpart.body;
+
+          deleteMessage(collegeGroupInbox, message.id);
+          break;
+        }
+      }
+    },
+    {
+      retries: 12,
+      delay: 10000,
+      timeout: 120000,
+      until: () => messageHtml != undefined,
+    },
+  );
+
+  return parseCandidateEmailHtml(messageHtml);
+}
