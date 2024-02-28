@@ -233,6 +233,8 @@ test.describe("Register Candidate", () => {
     const contact2 = await fillInCandidateForm(browser, testCandidate2);
     candidatessToDelete.push(testCandidate2.email);
 
+    await axios.post(config.triggerSendCandidateDetailsUrl!);
+
     const parsedEmail2 = await getCandidateEmailSentToCollegeAndDeleteEmail(
       updatedCollegeGroupInbox,
     );
