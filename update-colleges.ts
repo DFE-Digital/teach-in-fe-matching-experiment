@@ -7,6 +7,7 @@ import { College } from "./src/types";
 
 import axios from 'axios';
 import { exit } from 'process';
+import { getPostcodeData } from './src/postcodes-io';
 
 const write = true;
 const overwriteGroupEmails = false;
@@ -36,13 +37,6 @@ type SourceCollegeGroup = {
     URN?: string,
     website?: string,
   }
-
-type PostcodesIOResponse = {
-    result: {
-        longitude: number,
-        latitude: number,
-    }
-}
 
 // const createEmailAddress = (collegeGroup: CollegeGroup) => `${collegeGroup.extRef}@${config.mailinatorDomain}`;
 const createEmailAddress = (collegeGroup: SourceCollegeGroup) => `college.match+${collegeGroup.name.toLowerCase().trim().substring(0, 25).trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}@education.gov.uk`;
@@ -97,13 +91,11 @@ const getCollegeGroupReference = (collegeGroupId: string) => `tife-college-group
             exit(1);
         }
 
-        const postcode = college.campuses[0].postcode.replace(/[^A-Za-z0-9]/g, '');
-
         try {
-            const postcodeResponse: PostcodesIOResponse = (await axios.get(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`)).data;
+            const postcodeResponse = await getPostcodeData(college.campuses[0].postcode);
 
-            qualtricsCollege.embeddedData.lat = postcodeResponse.result.latitude;
-            qualtricsCollege.embeddedData.long = postcodeResponse.result.longitude;
+            qualtricsCollege.embeddedData.lat = postcodeResponse.latitude;
+            qualtricsCollege.embeddedData.long = postcodeResponse.longitude;
         } catch(e) {
             console.error("Invalid college postcode", college);
         }
