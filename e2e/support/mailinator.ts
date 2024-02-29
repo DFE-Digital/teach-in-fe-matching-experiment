@@ -6,7 +6,7 @@ import {
   GetMessageRequest,
   DeleteMessageRequest,
 } from "mailinator-client";
-import config from "../src/config";
+import config from "../../src/config";
 
 export const mailinatorClient = new MailinatorClient(config.mailinatorApiKey);
 

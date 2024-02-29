@@ -20,7 +20,7 @@ import {
   getInbox,
   getMessage,
   getMessageLinks,
-} from "./mailinator";
+} from "./support/mailinator";
 import axios from "axios";
 import { parseCandidateEmailHtml } from "./support/email-parser";
 import { CollegeGroup, CollegeGroupStatus } from "../src/types";
@@ -44,15 +44,11 @@ for (const groupRecord of collegeRecords.groups) {
   groupRecord.email = getTestEmail(getTestReference(groupRecord.extRef));
 }
 
-test.describe("No matching colleges", () => {
-  test.setTimeout(5 * 60 * 1000); // 3 minutes
-});
-
 test.describe("Register Candidate", () => {
-  test.setTimeout(5 * 60 * 1000); // 3 minutes
+  test.setTimeout(5 * 60 * 1000); // 5 minutes
 
   const mailboxesToDelete: string[] = [];
-  const candidatessToDelete: string[] = [];
+  const candidatesToDelete: string[] = [];
 
   const createTestColleges = async () => {
     console.log("🚀🚀🚀 Creating test colleges and groups 🚀🚀🚀");
@@ -80,7 +76,7 @@ test.describe("Register Candidate", () => {
 
   const deleteTestCandidates = async () => {
     console.log("🚀🚀🚀 Deleting test candidates 🚀🚀🚀");
-    for (const email of candidatessToDelete) {
+    for (const email of candidatesToDelete) {
       const candidate = await getCandidateByEmail(email);
 
       if (candidate) {
@@ -122,8 +118,8 @@ test.describe("Register Candidate", () => {
       email: getTestEmail(getTestReference("candidate1")),
     };
 
+    candidatesToDelete.push(testCandidate.email);
     const contact = await fillInCandidateForm(browser, testCandidate);
-    candidatessToDelete.push(testCandidate.email);
 
     expect(contact.firstName).toEqual(testCandidate.firstName);
     expect(contact.lastName).toEqual(testCandidate.lastName);
@@ -147,6 +143,15 @@ test.describe("Register Candidate", () => {
     );
     expect(contact.embeddedData?.collegeGroup1Colleges).toEqual(
       collegeRecords.colleges[0].extRef,
+    );
+    expect(contact.embeddedData?.collegeGroup2Id).toEqual(
+      collegeRecords.groups[1].extRef,
+    );
+    expect(contact.embeddedData?.collegeGroup2Colleges).toEqual(
+      [
+        collegeRecords.colleges[1].extRef,
+        collegeRecords.colleges[2].extRef,
+      ].join(","),
     );
 
     let collegeGroup = await waitForCollegeGroupStatus(
@@ -230,11 +235,15 @@ test.describe("Register Candidate", () => {
       email: getTestEmail(getTestReference("candidate2")),
     };
 
-    const contact2 = await fillInCandidateForm(browser, testCandidate2);
-    candidatessToDelete.push(testCandidate2.email);
+    candidatesToDelete.push(testCandidate2.email);
+    await fillInCandidateForm(browser, testCandidate2);
 
+    console.log(
+      "🚀🚀🚀 Triggering sending the candidate email to colleges 🚀🚀🚀",
+    );
     await axios.post(config.triggerSendCandidateDetailsUrl!);
 
+    console.log("🚀🚀🚀 Waiting for the email 🚀🚀🚀");
     const parsedEmail2 = await getCandidateEmailSentToCollegeAndDeleteEmail(
       updatedCollegeGroupInbox,
     );
@@ -254,6 +263,83 @@ test.describe("Register Candidate", () => {
     expect(parsedEmail2[0].qualification).toEqual(testCandidate2.qualification);
     expect(parsedEmail2[0].experience).toEqual(testCandidate2.experience);
     expect(parsedEmail2[0].availability).toEqual(testCandidate2.availability);
+
+    console.log("🚀🚀🚀 Waiting for college invite email for group 2 🚀🚀🚀");
+    let collegeGroup2 = await waitForCollegeGroupStatus(
+      collegeRecords.groups[1].extRef,
+      "Invited",
+    );
+
+    const initialCollegeGroup2Inbox = getTestReference(collegeGroup2.extRef);
+    mailboxesToDelete.push(initialCollegeGroup2Inbox);
+
+    const college2SurveyLink = await getCollegeGroupInviteLinkAndDeleteEmail(
+      initialCollegeGroup2Inbox,
+    );
+
+    console.log(
+      "🚀🚀🚀 Filling in the college registration form for the second group 🚀🚀🚀",
+    );
+    const newGroup2Email = getTestEmail(initialCollegeGroup2Inbox);
+
+    const testCollegeUser2Details: CollegeFormDetails = {
+      firstName: "Jo",
+      lastName: "Bleggs",
+      jobTitle: "A second user",
+      email: newGroup2Email,
+    };
+
+    await fillInCollegeForm(
+      browser,
+      college2SurveyLink,
+      testCollegeUser2Details,
+    );
+
+    collegeGroup2 = await waitForCollegeGroupStatus(
+      collegeGroup2.extRef,
+      "Active",
+    );
+
+    await axios.post(config.triggerSendCandidateDetailsUrl!);
+
+    const parsedEmail3 = await getCandidateEmailSentToCollegeAndDeleteEmail(
+      initialCollegeGroup2Inbox,
+    );
+
+    expect(parsedEmail3).toHaveLength(2);
+    // Candidate 1
+    expect(parsedEmail3[0].subject).toEqual(testCandidate.subject1);
+    expect(parsedEmail3[0].name).toEqual(
+      `${testCandidate.firstName} ${testCandidate.lastName}`,
+    );
+    expect(parsedEmail3[0].email).toEqual(
+      `<a href="mailto:${testCandidate.email}">${testCandidate.email}</a>`,
+    );
+    expect(parsedEmail3[0].colleges).toEqual([
+      collegeRecords.colleges[1].firstName,
+      collegeRecords.colleges[2].firstName,
+    ]);
+    expect(parsedEmail3[0].subject2).toEqual(testCandidate.subject2Other);
+    expect(parsedEmail3[0].qualification).toEqual(testCandidate.qualification);
+    expect(parsedEmail3[0].experience).toEqual(testCandidate.experience);
+    expect(parsedEmail3[0].availability).toEqual(testCandidate.availability);
+
+    // Candidate 2
+    expect(parsedEmail3[1].subject).toEqual(testCandidate2.subject1);
+    expect(parsedEmail3[1].name).toEqual(
+      `${testCandidate2.firstName} ${testCandidate2.lastName}`,
+    );
+    expect(parsedEmail3[1].email).toEqual(
+      `<a href="mailto:${testCandidate2.email}">${testCandidate2.email}</a>`,
+    );
+    expect(parsedEmail3[1].colleges).toEqual([
+      collegeRecords.colleges[1].firstName,
+      collegeRecords.colleges[2].firstName,
+    ]);
+    expect(parsedEmail3[1].subject2).toEqual(testCandidate2.subject2Other);
+    expect(parsedEmail3[1].qualification).toEqual(testCandidate2.qualification);
+    expect(parsedEmail3[1].experience).toEqual(testCandidate2.experience);
+    expect(parsedEmail3[1].availability).toEqual(testCandidate2.availability);
   });
 });
 
